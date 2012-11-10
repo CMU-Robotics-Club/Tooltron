@@ -114,6 +114,8 @@ xMBPortSerialInit( UCHAR ucPORT, ULONG ulBaudRate, UCHAR ucDataBits, eMBParity e
     UCSRC = _BV( URSEL ) | ucUCSRC;
 #elif defined (__AVR_ATmega128__)
     UCSRC |= ucUCSRC;
+#elif defined (__AVR_ATtiny1634__)
+    UCSRC |= ucUCSRC;
 #endif
 
     vMBPortSerialEnable( FALSE, FALSE );
