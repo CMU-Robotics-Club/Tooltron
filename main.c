@@ -5,8 +5,9 @@
 #include "tooltron_mb.h"
 #include "rfid.h"
 
-eMBErrorCode eMBRegCoilsCB(UCHAR *reg_buf, USHORT addr, USHORT num,
+eMBErrorCode eMBRegCoilsCB(UCHAR *reg_buf, USHORT addr, USHORT n_coils,
     eMBRegisterMode mode) {
+  // TODO implement coils
   if (mode == MB_REG_WRITE) {
     return MB_ENOREG;
   } else if (mode == MB_REG_READ) {
@@ -16,25 +17,48 @@ eMBErrorCode eMBRegCoilsCB(UCHAR *reg_buf, USHORT addr, USHORT num,
   }
 }
 
-eMBErrorCode eMBRegDiscreteCB(UCHAR *reg_buf, USHORT addr, USHORT num) {
+eMBErrorCode eMBRegDiscreteCB(UCHAR *reg_buf, USHORT addr, USHORT n_coils) {
   return MB_ENOREG;
 }
 
-eMBErrorCode eMBRegInputCB(UCHAR *reg_buf, USHORT addr, USHORT num) {
-  int i;
+eMBErrorCode eMBRegInputCB(UCHAR *reg_buf, USHORT addr, USHORT n_regs) {
+  char serno[RFID_SERNO_SIZE];
+
+  rfid_get_serno(serno);
+
   switch (addr) {
-    case 0:
-      // TODO test whether the following works as expected (8 or 16 bit buf?)
-      for (i = 0; i < 2*num; i++) {
-        reg_buf[i] = i;
+
+    case MB_INP_SERNOL:
+      // TODO check that these (and the ones in SERNOH) are in the right order
+      *reg_buf++ = serno[0];
+      *reg_buf++ = serno[1];
+      n_regs--;
+      if (n_regs == 0) {
+        return MB_ENOERR;
       }
-      return MB_ENOERR;
+
+    case MB_INP_SERNOH:
+      *reg_buf++ = serno[2];
+      *reg_buf++ = serno[3];
+      n_regs--;
+      if (n_regs == 0) {
+        return MB_ENOERR;
+      }
+
+    case MB_INP_CURRENT:
+      *reg_buf++ = 0;
+      *reg_buf++ = 0;
+      n_regs--;
+      if (n_regs == 0) {
+        return MB_ENOERR;
+      }
+
     default:
       return MB_ENOREG;
   }
 }
 
-eMBErrorCode eMBRegHoldingCB(UCHAR *reg_buf, USHORT addr, USHORT num,
+eMBErrorCode eMBRegHoldingCB(UCHAR *reg_buf, USHORT addr, USHORT n_regs,
     eMBRegisterMode mode) {
   if (mode == MB_REG_WRITE) {
     return MB_ENOREG;
