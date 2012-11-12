@@ -8,12 +8,12 @@ SRC=main.c serial.c rfid.c \
 		freemodbus/modbus/rtu/mbrtu.c \
 		freemodbus/modbus/ascii/mbascii.c \
 		freemodbus/modbus/functions/*.c
-HDR=tooltron_mb.h serial.h rfid.h freemodbus/port/*.h
+HDR=../tooltron_mb.h serial.h rfid.h freemodbus/port/*.h
 
 # TODO we can exclude modbus functions we don't need if the generated hex file
 # ends up too large
 
-FLAGS=-Os -Wall -mmcu=$(MCU) -DF_CPU=$(F_CPU) \
+FLAGS=-Os -Wall -mmcu=$(MCU) -DF_CPU=$(F_CPU) -I.. \
 			-Ifreemodbus/port \
 			-Ifreemodbus/modbus/rtu \
 			-Ifreemodbus/modbus/ascii \
