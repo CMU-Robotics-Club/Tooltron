@@ -16,12 +16,13 @@
  * Coils, 1 bit read/write
  */
 
-/* When 1, there is a new rfid tag in the tool. The main box should either
- * write 1 to MB_COIL_EN, which automatically clears MB_COIL_NEW, or it should
- * write 0 directly to MB_COIL_NEW which denies the request */
+/* When 1, there is a new rfid tag in the tool. Automatically cleared when the
+ * main box writes to MB_COIL_EN */
 #define MB_COIL_NEW     0
 
-/* When 1, tool can be turned on. Write 0 to immediately shut off tool */
+/* When 1, the tool receives power. Write 1 or 0 to grant or deny an access
+ * request, respectively. If the tool is running, write 0 to immediately shut
+ * off the tool */
 #define MB_COIL_EN      1
 
 /* Write 1 to request that the tool is disabled soon (what that means will be
@@ -32,6 +33,9 @@
  * the main box should rewrite values for current limits (to be implemented
  * later) */
 #define MB_COIL_INIT    3
+
+/* Number of coils */
+#define N_COILS 4
 
 /*
  * Other things
