@@ -5,16 +5,65 @@
 #include "tooltron_mb.h"
 #include "rfid.h"
 
+static char coils;
+
+static inline void set_coil(char coil, char bit) {
+  coils |= (bit << coil);
+}
+
 eMBErrorCode eMBRegCoilsCB(UCHAR *reg_buf, USHORT addr, USHORT n_coils,
     eMBRegisterMode mode) {
-  // TODO implement coils
-  if (mode == MB_REG_WRITE) {
+
+  if (addr >= N_COILS || n_coils >= N_COILS-addr) {
     return MB_ENOREG;
-  } else if (mode == MB_REG_READ) {
-    return MB_ENOREG;
-  } else {
-    return MB_EIO;
   }
+
+  if (mode == MB_REG_WRITE) {
+
+    switch (addr) {
+
+      case MB_COIL_NEW:
+        /* nop */
+        reg_buf[0] >>= 1;
+        n_coils--;
+        if (n_coils == 0) {
+          return MB_ENOERR;
+        }
+
+      case MB_COIL_EN:
+        set_coil(MB_COIL_NEW, 0);
+        set_coil(MB_COIL_EN, reg_buf[0] & 1);
+        reg_buf[0] >>= 1;
+        n_coils--;
+        if (n_coils == 0) {
+          return MB_ENOERR;
+        }
+
+      case MB_COIL_REQ_DIS:
+        set_coil(MB_COIL_INIT, reg_buf[0] & 1);
+        reg_buf[0] >>= 1;
+        n_coils--;
+        if (n_coils == 0) {
+          return MB_ENOERR;
+        }
+
+      case MB_COIL_INIT:
+        set_coil(MB_COIL_INIT, reg_buf[0] & 1);
+        reg_buf[0] >>= 1;
+        n_coils--;
+        if (n_coils == 0) {
+          return MB_ENOERR;
+        }
+    }
+
+  } else if (mode == MB_REG_READ) {
+
+    reg_buf[0] = (coils >> addr) & ((1 << n_coils) - 1);
+    return MB_ENOERR;
+
+  }
+
+  return MB_EIO;
 }
 
 eMBErrorCode eMBRegDiscreteCB(UCHAR *reg_buf, USHORT addr, USHORT n_coils) {
@@ -75,8 +124,14 @@ int main() {
   eMBInit(MB_RTU, SLAVE_ADDR, 0, MB_BAUD, MB_PAR_NONE);
   eMBEnable();
 
+  /* Set pin controlling relay to output */
+  DDRA |= _BV(DDA1);
+
+  sei();
+
   while (1) {
     rfid_read();
+    /* TODO act on rfid input and coil state */
     eMBPoll();
     _delay_ms(200);
   }
