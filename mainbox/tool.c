@@ -40,7 +40,7 @@ static void tool_init(struct tool_t *tool) {
   tool->state = TS_OFF;
 }
 
-static void tool_get_user(struct tool_t *tool) {
+static void tool_read_user(struct tool_t *tool) {
   unsigned short serno[2];
   if (modbus_read_registers(ctx, MB_INP_SERNOL, 2, serno) == -1) {
     fprintf(stderr, "modbus_read_registers: %s\n", modbus_strerror(errno));
@@ -89,7 +89,7 @@ void tool_poll(struct tool_t *tool) {
 
     case TS_OFF:
       if (status[MB_COIL_NEW]) {
-        tool_get_user(tool);
+        tool_read_user(tool);
         // TODO check actual credentials
         if (rand() & 1) {
           tool_grant_access(tool);
