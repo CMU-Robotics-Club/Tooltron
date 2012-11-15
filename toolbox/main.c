@@ -60,14 +60,27 @@ static void tool_main() {
       break;
 
     case TS_REQ_DIS:
-      // TODO blink yellow for 10 seconds or something
-      set_coil(MB_COIL_EN, 0);
-      tool_disable();
-      toolstate = TS_OFF;
+      if (!get_coil(MB_COIL_EN)) {
+        tool_disable();
+        toolstate = TS_OFF;
+      } else if (!get_coil(MB_COIL_REQ_DIS)) {
+        toolstate = TS_ON;
+      } else {
+        // TODO blink yellow for 10 seconds or something
+        set_coil(MB_COIL_EN, 0);
+        set_coil(MB_COIL_REQ_DIS, 0);
+        tool_disable();
+        toolstate = TS_OFF;
+      }
       break;
 
     case TS_MISSING_ID:
-      if (rfid_check_serno(current_user)) {
+      if (!get_coil(MB_COIL_EN)) {
+        tool_disable();
+        toolstate = TS_OFF;
+      } else if (get_coil(MB_COIL_REQ_DIS)) {
+        toolstate = TS_REQ_DIS;
+      } else if (rfid_check_serno(current_user)) {
         toolstate = TS_ON;
       } else {
         // TODO blink yellow for 10 seconds or something
@@ -81,11 +94,9 @@ static void tool_main() {
       if (!get_coil(MB_COIL_EN)) {
         tool_disable();
         toolstate = TS_OFF;
-      }
-      if (get_coil(MB_COIL_REQ_DIS)) {
+      } else if(get_coil(MB_COIL_REQ_DIS)) {
         toolstate = TS_REQ_DIS;
-      }
-      if (!rfid_check_serno(current_user)) {
+      } else if (!rfid_check_serno(current_user)) {
         toolstate = TS_MISSING_ID;
       }
       break;
