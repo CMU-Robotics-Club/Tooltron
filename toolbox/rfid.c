@@ -1,3 +1,4 @@
+#include <string.h>
 #include <util/delay.h>
 #include "rfid.h"
 #include "serial.h"
@@ -72,8 +73,19 @@ void rfid_read() {
 }
 
 void rfid_get_serno(char *buf) {
+  memcpy(buf, serno, sizeof(serno));
+}
+
+char rfid_check_serno(char *buf) {
+  return memcmp(buf, serno, sizeof(serno)) == 0;
+}
+
+char rfid_nonzero() {
   int i;
-  for (i = 0; i < RFID_SERNO_SIZE; i++) {
-    buf[i] = serno[i];
+  for (i = 0; i < sizeof(serno); i++) {
+    if (serno[i]) {
+      return 1;
+    }
   }
+  return 0;
 }

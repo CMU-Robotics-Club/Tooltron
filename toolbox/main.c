@@ -1,14 +1,97 @@
 #include <stdint.h>
+#include <string.h>
+#include <avr/io.h>
 #include <util/delay.h>
 #include "mb.h"
 #include "mbport.h"
 #include "tooltron_mb.h"
 #include "rfid.h"
 
+enum toolstate_t {
+  TS_INIT,
+  TS_OFF,
+  TS_WAIT_ACCESS,
+  TS_REQ_DIS,
+  TS_MISSING_ID,
+  TS_ON
+};
+
+static enum toolstate_t toolstate = TS_INIT;
 static char coils;
+static char current_user[RFID_SERNO_SIZE];
 
 static inline void set_coil(char coil, char bit) {
   coils |= (bit << coil);
+}
+static inline char get_coil(char coil) {
+  return (coils >> coil) & 1;
+}
+
+static inline void tool_init() {DDRA |= _BV(DDA1);}
+static inline void tool_enable() {PORTA |= _BV(PA1);}
+static inline void tool_disable() {PORTA &= _BV(PA1);}
+
+static void tool_main() {
+
+  switch (toolstate) {
+
+    case TS_INIT:
+      if (get_coil(MB_COIL_INIT)) {
+        set_coil(MB_COIL_NEW, 0);
+        set_coil(MB_COIL_EN, 0);
+        set_coil(MB_COIL_REQ_DIS, 0);
+        toolstate = TS_OFF;
+      }
+      break;
+
+    case TS_OFF:
+      if (rfid_nonzero()) {
+        rfid_get_serno(current_user);
+        set_coil(MB_COIL_NEW, 1);
+        toolstate = TS_WAIT_ACCESS;
+      }
+      break;
+
+    case TS_WAIT_ACCESS:
+      if (get_coil(MB_COIL_EN)) {
+        tool_enable();
+        toolstate = TS_ON;
+      }
+      break;
+
+    case TS_REQ_DIS:
+      // TODO blink yellow for 10 seconds or something
+      set_coil(MB_COIL_EN, 0);
+      tool_disable();
+      toolstate = TS_OFF;
+      break;
+
+    case TS_MISSING_ID:
+      if (rfid_check_serno(current_user)) {
+        toolstate = TS_ON;
+      } else {
+        // TODO blink yellow for 10 seconds or something
+        set_coil(MB_COIL_EN, 0);
+        tool_disable();
+        toolstate = TS_OFF;
+      }
+      break;
+
+    case TS_ON:
+      if (!get_coil(MB_COIL_EN)) {
+        tool_disable();
+        toolstate = TS_OFF;
+      }
+      if (get_coil(MB_COIL_REQ_DIS)) {
+        toolstate = TS_REQ_DIS;
+      }
+      if (!rfid_check_serno(current_user)) {
+        toolstate = TS_MISSING_ID;
+      }
+      break;
+
+  }
+
 }
 
 eMBErrorCode eMBRegCoilsCB(UCHAR *reg_buf, USHORT addr, USHORT n_coils,
@@ -40,7 +123,7 @@ eMBErrorCode eMBRegCoilsCB(UCHAR *reg_buf, USHORT addr, USHORT n_coils,
         }
 
       case MB_COIL_REQ_DIS:
-        set_coil(MB_COIL_INIT, reg_buf[0] & 1);
+        set_coil(MB_COIL_REQ_DIS, reg_buf[0] & 1);
         reg_buf[0] >>= 1;
         n_coils--;
         if (n_coils == 0) {
@@ -73,7 +156,7 @@ eMBErrorCode eMBRegDiscreteCB(UCHAR *reg_buf, USHORT addr, USHORT n_coils) {
 eMBErrorCode eMBRegInputCB(UCHAR *reg_buf, USHORT addr, USHORT n_regs) {
   char serno[RFID_SERNO_SIZE];
 
-  rfid_get_serno(serno);
+  memcpy(reg_buf, current_user, sizeof(current_user));
 
   switch (addr) {
 
@@ -119,19 +202,18 @@ eMBErrorCode eMBRegHoldingCB(UCHAR *reg_buf, USHORT addr, USHORT n_regs,
 }
 
 int main() {
+
+  tool_init();
   rfid_init();
 
   eMBInit(MB_RTU, SLAVE_ADDR, 0, MB_BAUD, MB_PAR_NONE);
   eMBEnable();
 
-  /* Set pin controlling relay to output */
-  DDRA |= _BV(DDA1);
-
   sei();
 
   while (1) {
     rfid_read();
-    /* TODO act on rfid input and coil state */
+    tool_main();
     eMBPoll();
     _delay_ms(200);
   }

@@ -15,7 +15,7 @@
 /* Should be called before anything else */
 void rfid_init();
 
-/* Reads the serial number of an rfid tag into an internal buffer, accessbile
+/* Reads the serial number of an rfid tag into an internal buffer, accessible
  * with rfid_get_serno */
 void rfid_read();
 
@@ -27,5 +27,13 @@ void rfid_read_safe();
 /* Call this only after calling rfid_read. This will copy the value it read
  * into serno, which should be at least RFID_SERNO_SIZE bytes */
 void rfid_get_serno(char *serno);
+
+/* Call this only after calling rfid_read. Returns 1 if serno matches the
+ * internal buffer of the most recently read serial number */
+char rfid_check_serno(char *serno);
+
+/* Call this only after calling rfid_read. Returns 1 if the internal buffer is
+ * nonzero, meaning a serial number was successfully read from an rfid tag */
+char rfid_nonzero();
 
 #endif
