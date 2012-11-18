@@ -33,11 +33,13 @@
 #include "mb.h"
 #include "mbport.h"
 
-#define UART_BAUD_RATE          9600
+#ifdef __AVR_ATtiny1634__
+#define UART_BAUD_CALC(UART_BAUD_RATE,F_OSC) \
+    ( ( F_OSC ) / ( ( UART_BAUD_RATE ) * 8UL ) - 1 )
+#else
 #define UART_BAUD_CALC(UART_BAUD_RATE,F_OSC) \
     ( ( F_OSC ) / ( ( UART_BAUD_RATE ) * 16UL ) - 1 )
-
-//#define UART_UCSRB  UCSR0B
+#endif
 
 void
 vMBPortSerialEnable( BOOL xRxEnable, BOOL xTxEnable )
@@ -115,6 +117,7 @@ xMBPortSerialInit( UCHAR ucPORT, ULONG ulBaudRate, UCHAR ucDataBits, eMBParity e
 #elif defined (__AVR_ATmega128__)
     UCSRC |= ucUCSRC;
 #elif defined (__AVR_ATtiny1634__)
+    UCSRA |= _BV(U2X);
     UCSRC |= ucUCSRC;
 #endif
 

@@ -119,7 +119,7 @@ typedef long    LONG;
 
 #elif defined (__AVR_ATtiny1634__)
 #define UCSRB           UCSR0B
-#define UBRR            UBRR0L
+#define UBRR            UBRR0
 #define UDR             UDR0
 #define UDRE            UDRE0
 #define TIMSK1          TIMSK
@@ -128,6 +128,8 @@ typedef long    LONG;
 #define UCSZ1           UCSZ01
 #define UPM0            UPM00
 #define UPM1            UPM01
+#define UCSRA           UCSR0A
+#define U2X             U2X0
 #define UCSRC           UCSR0C
 #define SIG_UART_TRANS  USART0_TX_vect
 #define SIG_USART_DATA  USART0_UDRE_vect
