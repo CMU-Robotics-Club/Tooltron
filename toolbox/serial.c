@@ -1,7 +1,6 @@
 #include "serial.h"
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include <util/atomic.h>
 
 static int rx_start = 0, rx_end = 0;
 static char rx_buffer[RX_BUFFER_SIZE];
@@ -30,7 +29,8 @@ void serial_init() {
   // USBS = 0, 1 stop bit
   // UCSZ = 3, 8-bit
   // U2X = 1, use 8 prescale instead of 16 for a more accurate baud rate
-  UCSR1B = _BV(RXCIE1) | _BV(RXEN1) | _BV(TXEN1) | _BV(U2X1);
+  UCSR1A = _BV(U2X1);
+  UCSR1B = _BV(RXCIE1) | _BV(RXEN1) | _BV(TXEN1);
   UCSR1C = _BV(UCSZ11) | _BV(UCSZ10);
 }
 
