@@ -8,6 +8,8 @@
 modbus_t *ctx;
 
 int tool_init_mb(const char *device) {
+  struct timeval timeout;
+
   ctx = modbus_new_rtu(device, MB_BAUD, 'N', 8, 1);
   if (ctx == NULL) {
     fprintf(stderr, "modbus_new_rtu: %s\n", modbus_strerror(errno));
@@ -19,6 +21,9 @@ int tool_init_mb(const char *device) {
     modbus_free(ctx);
     return 1;
   }
+
+  modbus_get_response_timeout(ctx, &timeout);
+  printf("Response timeout is %lus %luus\n", timeout.tv_sec, timeout.tv_usec);
 
   return 0;
 }
@@ -42,7 +47,7 @@ static void tool_init(struct tool_t *tool) {
 
 static void tool_read_user(struct tool_t *tool) {
   unsigned short serno[2];
-  if (modbus_read_registers(ctx, MB_INP_SERNOL, 2, serno) == -1) {
+  if (modbus_read_input_registers(ctx, MB_INP_SERNOL, 2, serno) == -1) {
     fprintf(stderr, "modbus_read_registers: %s\n", modbus_strerror(errno));
     tool->user = 0;
   } else {
@@ -68,9 +73,13 @@ void tool_request_disable(struct tool_t *tool) {
 void tool_poll(struct tool_t *tool) {
   unsigned char status[N_COILS];
 
-  if (modbus_set_slave(ctx, SLAVE_ADDR) == -1) {
+  if (modbus_set_slave(ctx, tool->address) == -1) {
     fprintf(stderr, "modbus_set_slave: %s\n", modbus_strerror(errno));
   }
+
+  tool_read_user(tool);
+  printf("%08x\n", tool->user);
+  return;
 
   if (modbus_read_bits(ctx, 0, N_COILS, status) == -1) {
     fprintf(stderr, "modbus_read_bits: %s\n", modbus_strerror(errno));
