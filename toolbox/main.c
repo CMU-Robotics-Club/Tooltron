@@ -29,7 +29,7 @@ static inline char get_coil(char coil) {
 
 static inline void tool_init() {DDRA |= _BV(DDA1);}
 static inline void tool_enable() {PORTA |= _BV(PA1);}
-static inline void tool_disable() {PORTA &= _BV(PA1);}
+static inline void tool_disable() {PORTA &= ~ _BV(PA1);}
 
 static void tool_main() {
 
@@ -108,7 +108,7 @@ static void tool_main() {
 eMBErrorCode eMBRegCoilsCB(UCHAR *reg_buf, USHORT addr, USHORT n_coils,
     eMBRegisterMode mode) {
 
-  if (addr >= N_COILS || n_coils >= N_COILS-addr) {
+  if (addr > N_COILS || n_coils >= N_COILS-addr) {
     return MB_ENOREG;
   }
 
@@ -152,7 +152,7 @@ eMBErrorCode eMBRegCoilsCB(UCHAR *reg_buf, USHORT addr, USHORT n_coils,
 
   } else if (mode == MB_REG_READ) {
 
-    reg_buf[0] = (coils >> addr) & ((1 << n_coils) - 1);
+    reg_buf[0] = (coils >> (addr-1)) & ((1 << n_coils) - 1);
     return MB_ENOERR;
 
   }
@@ -165,24 +165,21 @@ eMBErrorCode eMBRegDiscreteCB(UCHAR *reg_buf, USHORT addr, USHORT n_coils) {
 }
 
 eMBErrorCode eMBRegInputCB(UCHAR *reg_buf, USHORT addr, USHORT n_regs) {
-  char serno[RFID_SERNO_SIZE];
-
-  memcpy(reg_buf, current_user, sizeof(current_user));
 
   switch (addr) {
 
     case MB_INP_SERNOL:
       // TODO check that these (and the ones in SERNOH) are in the right order
-      *reg_buf++ = serno[0];
-      *reg_buf++ = serno[1];
+      *reg_buf++ = current_user[0];
+      *reg_buf++ = current_user[1];
       n_regs--;
       if (n_regs == 0) {
         return MB_ENOERR;
       }
 
     case MB_INP_SERNOH:
-      *reg_buf++ = serno[2];
-      *reg_buf++ = serno[3];
+      *reg_buf++ = current_user[2];
+      *reg_buf++ = current_user[3];
       n_regs--;
       if (n_regs == 0) {
         return MB_ENOERR;
@@ -226,7 +223,7 @@ int main() {
     rfid_read();
     tool_main();
     eMBPoll();
-    _delay_ms(200);
+    _delay_ms(100);
   }
 
   return 0;
