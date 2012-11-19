@@ -20,7 +20,8 @@ ISR(USART1_RX_vect) {
 }
 
 void serial_init() {
-  // baud = F_CPU / (8 (UBRR + 1))
+  // baud = F_CPU / (div (UBRR + 1))
+  // where div = 16 if U2X = 0, or 8 otherwise
   uint16_t ubrr = F_CPU / 8 / BAUD_RATE - 1;
   UBRR1H = ubrr >> 8;
   UBRR1L = ubrr;
@@ -47,6 +48,13 @@ int serial_read() {
   }
   sei();
   return ret;
+}
+
+void serial_flush() {
+  cli();
+  rx_start = 0;
+  rx_end = 0;
+  sei();
 }
 
 char serial_read_blocking() {
