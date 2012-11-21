@@ -5,6 +5,7 @@
 
 static char read_cmd[] = {'!', 'R', 'W', 1, 32};
 
+static int serno_idx;
 static char serno[RFID_SERNO_SIZE];
 
 static void zero_serno() {
@@ -57,19 +58,41 @@ void rfid_read_safe() {
         return;
       }
     }
-    _delay_ms(40);
+    _delay_ms(10);
   }
 }
 
-void rfid_read() {
-  while (1) {
-    serial_write(read_cmd, sizeof(read_cmd));
-    if (serial_read_blocking() == RFID_OK) {
-      read_serno();
-      return;
+void rfid_start_read() {
+  serno_idx = -1;
+  zero_serno(); // TODO temporary
+  serial_flush();
+  serial_write(read_cmd, sizeof(read_cmd));
+}
+
+char rfid_poll() {
+  int c;
+
+  c = serial_read();
+  while (c >= 0) {
+
+    if (serno_idx < 0) {
+      if (c != RFID_OK) {
+        zero_serno();
+        return 1;
+      }
+    } else {
+      serno[serno_idx] = c;
     }
-    _delay_ms(40);
+
+    serno_idx++;
+    if (serno_idx >= RFID_SERNO_SIZE) {
+      return 1;
+    }
+
+    c = serial_read();
   }
+
+  return 0;
 }
 
 void rfid_get_serno(char *buf) {

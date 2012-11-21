@@ -15,25 +15,30 @@
 /* Should be called before anything else */
 void rfid_init();
 
-/* Reads the serial number of an rfid tag into an internal buffer, accessible
- * with rfid_get_serno */
-void rfid_read();
+/* Sends the read command to the rfid reader. After, you should call rfid_poll
+ * until it returns nonzero */
+void rfid_start_read();
+
+/* Should only be called after rfid_start_read. Keep calling until it returns
+ * nonzero, which means it is finished reading the serial number, and
+ * rfid_get_serno can be called */
+char rfid_poll();
 
 /* Attempts to read the serial number multiple times, and only accepts it if it
- * is the same every time. Use rfid_read instead until this one is proven
- * necessary */
+ * is the same every time. Don't use it */
 void rfid_read_safe();
 
-/* Call this only after calling rfid_read. This will copy the value it read
- * into serno, which should be at least RFID_SERNO_SIZE bytes */
+/* Call this only after rfid_poll returns nonzero. This will copy the value it
+ * read into serno, which should be at least RFID_SERNO_SIZE bytes */
 void rfid_get_serno(char *serno);
 
-/* Call this only after calling rfid_read. Returns 1 if serno matches the
- * internal buffer of the most recently read serial number */
+/* Call this only after rfid_poll returns nonzero. Returns 1 if serno matches
+ * the internal buffer of the most recently read serial number */
 char rfid_check_serno(char *serno);
 
-/* Call this only after calling rfid_read. Returns 1 if the internal buffer is
- * nonzero, meaning a serial number was successfully read from an rfid tag */
+/* Call this only after rfid_poll returns nonzero. Returns 1 if the internal
+ * buffer is nonzero, meaning a serial number was successfully read from an
+ * rfid tag */
 char rfid_nonzero();
 
 #endif

@@ -6,6 +6,7 @@
 #include "mbport.h"
 #include "tooltron_mb.h"
 #include "rfid.h"
+#include "led.h"
 
 enum toolstate_t {
   TS_INIT,
@@ -108,7 +109,7 @@ static void tool_main() {
 eMBErrorCode eMBRegCoilsCB(UCHAR *reg_buf, USHORT addr, USHORT n_coils,
     eMBRegisterMode mode) {
 
-  if (addr > N_COILS || n_coils >= N_COILS-addr) {
+  if (addr+n_coils > N_COILS) {
     return MB_ENOREG;
   }
 
@@ -211,6 +212,7 @@ eMBErrorCode eMBRegHoldingCB(UCHAR *reg_buf, USHORT addr, USHORT n_regs,
 
 int main() {
 
+  led_init();
   tool_init();
   rfid_init();
 
@@ -219,11 +221,15 @@ int main() {
 
   sei();
 
+  rfid_start_read();
   while (1) {
-    rfid_read();
-    tool_main();
+    if (rfid_poll()) {
+      rfid_start_read();
+    }
+    rfid_get_serno(current_user);
+    //tool_main();
     eMBPoll();
-    _delay_ms(100);
+    _delay_ms(50);
   }
 
   return 0;
