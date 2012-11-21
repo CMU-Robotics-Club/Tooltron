@@ -1,7 +1,7 @@
 PART=t1634
 MCU=attiny1634
 #MCU=atmega2560
-F_CPU=1000000UL
+F_CPU=8000000UL
 SRC=main.c serial.c rfid.c \
 		freemodbus/port/*.c \
 		freemodbus/modbus/mb.c \
