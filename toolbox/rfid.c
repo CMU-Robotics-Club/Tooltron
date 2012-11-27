@@ -1,12 +1,13 @@
 #include <string.h>
+#include <stdint.h>
 #include <util/delay.h>
 #include "rfid.h"
 #include "serial.h"
 
-static char read_cmd[] = {'!', 'R', 'W', 1, 32};
+static uint8_t read_cmd[] = {'!', 'R', 'W', 1, 32};
 
 static int serno_idx;
-static char serno[RFID_SERNO_SIZE];
+static uint8_t serno[RFID_SERNO_SIZE];
 
 static void zero_serno() {
   int i;
@@ -72,8 +73,7 @@ void rfid_start_read() {
 char rfid_poll() {
   int c;
 
-  c = serial_read();
-  while (c >= 0) {
+  while ((c = serial_read()) >= 0) {
 
     if (serno_idx < 0) {
       if (c != RFID_OK) {
@@ -89,17 +89,16 @@ char rfid_poll() {
       return 1;
     }
 
-    c = serial_read();
   }
 
   return 0;
 }
 
-void rfid_get_serno(char *buf) {
+void rfid_get_serno(uint8_t *buf) {
   memcpy(buf, serno, sizeof(serno));
 }
 
-char rfid_check_serno(char *buf) {
+char rfid_check_serno(uint8_t *buf) {
   return memcmp(buf, serno, sizeof(serno)) == 0;
 }
 

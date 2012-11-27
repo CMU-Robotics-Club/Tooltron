@@ -1,12 +1,13 @@
-#include "serial.h"
+#include <stdint.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include "serial.h"
 
 static int rx_start = 0, rx_end = 0;
-static char rx_buffer[RX_BUFFER_SIZE];
+static uint8_t rx_buffer[RX_BUFFER_SIZE];
 
 ISR(USART1_RX_vect) {
-  char data = UDR1;
+  uint8_t data = UDR1;
   int new_end = rx_end+1;
   if (new_end == RX_BUFFER_SIZE) {
     new_end = 0;
@@ -43,8 +44,9 @@ int serial_read() {
   } else {
     ret = rx_buffer[rx_start];
     rx_start++;
-    if (rx_start == RX_BUFFER_SIZE)
+    if (rx_start == RX_BUFFER_SIZE) {
       rx_start = 0;
+    }
   }
   sei();
   return ret;
@@ -57,7 +59,7 @@ void serial_flush() {
   sei();
 }
 
-char serial_read_blocking() {
+uint8_t serial_read_blocking() {
   int c;
   do {
     c = serial_read();
@@ -65,7 +67,7 @@ char serial_read_blocking() {
   return c;
 }
 
-void serial_write(char* data, int length) {
+void serial_write(uint8_t* data, int length) {
   int i;
   for (i = 0; i < length; i++) {
     while (!(UCSR1A & _BV(UDRE1)));

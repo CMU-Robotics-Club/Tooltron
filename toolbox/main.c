@@ -18,11 +18,11 @@ enum toolstate_t {
 };
 
 static enum toolstate_t toolstate = TS_INIT;
-static char coils;
-static char current_user[RFID_SERNO_SIZE];
+static uint8_t coils;
+static uint8_t current_user[RFID_SERNO_SIZE];
 
 static inline void set_coil(char coil, char bit) {
-  coils |= (bit << coil);
+  coils = (coils & ~(1 << coil)) | (bit << coil);
 }
 static inline char get_coil(char coil) {
   return (coils >> coil) & 1;
@@ -170,7 +170,6 @@ eMBErrorCode eMBRegInputCB(UCHAR *reg_buf, USHORT addr, USHORT n_regs) {
   switch (addr) {
 
     case MB_INP_SERNOL:
-      // TODO check that these (and the ones in SERNOH) are in the right order
       *reg_buf++ = current_user[0];
       *reg_buf++ = current_user[1];
       n_regs--;
@@ -224,9 +223,9 @@ int main() {
   rfid_start_read();
   while (1) {
     if (rfid_poll()) {
+      rfid_get_serno(current_user);
       rfid_start_read();
     }
-    rfid_get_serno(current_user);
     //tool_main();
     eMBPoll();
     _delay_ms(50);

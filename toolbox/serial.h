@@ -3,7 +3,7 @@
 
 #define BAUD_RATE 9600
 
-#define RX_BUFFER_SIZE 256
+#define RX_BUFFER_SIZE 64
 
 void serial_init();
 int serial_read();
