@@ -8,7 +8,7 @@ xxd -r readhex > /dev/ttyUSB0
 sleep 0.1
 
 response=`head -c 5 /dev/ttyUSB0`
-ok="\001"
+ok=`printf "\001"`
 
 if [ ${response:0:1} = $ok ]; then
   echo -n ${response:1} | xxd
