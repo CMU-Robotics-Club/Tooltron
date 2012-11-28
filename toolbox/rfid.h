@@ -30,11 +30,11 @@ void rfid_read_safe();
 
 /* Call this only after rfid_poll returns nonzero. This will copy the value it
  * read into serno, which should be at least RFID_SERNO_SIZE bytes */
-void rfid_get_serno(char *serno);
+void rfid_get_serno(uint8_t *serno);
 
 /* Call this only after rfid_poll returns nonzero. Returns 1 if serno matches
  * the internal buffer of the most recently read serial number */
-char rfid_check_serno(char *serno);
+char rfid_check_serno(uint8_t *serno);
 
 /* Call this only after rfid_poll returns nonzero. Returns 1 if the internal
  * buffer is nonzero, meaning a serial number was successfully read from an
