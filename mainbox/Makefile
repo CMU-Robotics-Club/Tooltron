@@ -1,5 +1,5 @@
 SRC=main.c tool.c
-HDR=tool.h
+HDR=tool.h ../tooltron_mb.h
 
 FLAGS=-O2 -g -Wall -I.. `pkg-config --cflags --libs libmodbus`
 

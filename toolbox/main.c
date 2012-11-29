@@ -57,6 +57,8 @@ static void tool_main() {
       if (get_coil(MB_COIL_EN)) {
         tool_enable();
         toolstate = TS_ON;
+      } else if (!get_coil(MB_COIL_NEW)) {
+        toolstate = TS_OFF;
       }
       break;
 
@@ -84,10 +86,11 @@ static void tool_main() {
       } else if (rfid_check_serno(current_user)) {
         toolstate = TS_ON;
       } else {
-        // TODO blink yellow for 10 seconds or something
-        set_coil(MB_COIL_EN, 0);
-        tool_disable();
-        toolstate = TS_OFF;
+        if (led_blink_done()) {
+          set_coil(MB_COIL_EN, 0);
+          tool_disable();
+          toolstate = TS_OFF;
+        }
       }
       break;
 
@@ -99,6 +102,7 @@ static void tool_main() {
         toolstate = TS_REQ_DIS;
       } else if (!rfid_check_serno(current_user)) {
         toolstate = TS_MISSING_ID;
+        led_blink_start();
       }
       break;
 
@@ -108,6 +112,8 @@ static void tool_main() {
 
 eMBErrorCode eMBRegCoilsCB(UCHAR *reg_buf, USHORT addr, USHORT n_coils,
     eMBRegisterMode mode) {
+
+  addr--;
 
   if (addr+n_coils > N_COILS) {
     return MB_ENOREG;
@@ -153,7 +159,7 @@ eMBErrorCode eMBRegCoilsCB(UCHAR *reg_buf, USHORT addr, USHORT n_coils,
 
   } else if (mode == MB_REG_READ) {
 
-    reg_buf[0] = (coils >> (addr-1)) & ((1 << n_coils) - 1);
+    reg_buf[0] = (coils >> addr) & ((1 << n_coils) - 1);
     return MB_ENOERR;
 
   }
@@ -166,6 +172,8 @@ eMBErrorCode eMBRegDiscreteCB(UCHAR *reg_buf, USHORT addr, USHORT n_coils) {
 }
 
 eMBErrorCode eMBRegInputCB(UCHAR *reg_buf, USHORT addr, USHORT n_regs) {
+
+  addr--;
 
   switch (addr) {
 
@@ -226,7 +234,7 @@ int main() {
       rfid_get_serno(current_user);
       rfid_start_read();
     }
-    //tool_main();
+    tool_main();
     eMBPoll();
     _delay_ms(50);
   }

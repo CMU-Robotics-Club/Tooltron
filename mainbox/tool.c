@@ -58,16 +58,19 @@ static void tool_read_user(struct tool_t *tool) {
 static void tool_grant_access(struct tool_t *tool) {
   printf("Granting access to %08x on %s\n", tool->user, tool->name);
   tool_write_coil(MB_COIL_EN, 1);
+  tool->state = TS_ON;
 }
 
 static void tool_deny_access(struct tool_t *tool) {
   printf("Denying access to %08x on %s\n", tool->user, tool->name);
   tool_write_coil(MB_COIL_EN, 0);
+  tool->state = TS_OFF;
 }
 
 void tool_request_disable(struct tool_t *tool) {
   printf("Requesting disable on %s\n", tool->name);
   tool_write_coil(MB_COIL_REQ_DIS, 1);
+  tool->state = TS_REQ_DIS;
 }
 
 void tool_poll(struct tool_t *tool) {
@@ -77,14 +80,13 @@ void tool_poll(struct tool_t *tool) {
     fprintf(stderr, "modbus_set_slave: %s\n", modbus_strerror(errno));
   }
 
-  tool_read_user(tool);
-  printf("%08x\n", tool->user);
-  return;
-
   if (modbus_read_bits(ctx, 0, N_COILS, status) == -1) {
     fprintf(stderr, "modbus_read_bits: %s\n", modbus_strerror(errno));
     return;
   }
+
+  printf("new:%d en:%d req_dis:%d init:%d\n", status[MB_COIL_NEW],
+      status[MB_COIL_EN], status[MB_COIL_REQ_DIS], status[MB_COIL_INIT]);
 
   if (!status[MB_COIL_INIT]) {
     tool->state = TS_INIT;
@@ -100,11 +102,12 @@ void tool_poll(struct tool_t *tool) {
       if (status[MB_COIL_NEW]) {
         tool_read_user(tool);
         // TODO check actual credentials
-        if (rand() & 1) {
+        printf("user:%08x\n", tool->user);
+        //if (rand() & 1) {
           tool_grant_access(tool);
-        } else {
+        /*} else {
           tool_deny_access(tool);
-        }
+        }*/
       }
       break;
 
