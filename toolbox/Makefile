@@ -2,13 +2,13 @@ PART=t1634
 MCU=attiny1634
 #MCU=atmega2560
 F_CPU=8000000UL
-SRC=main.c serial.c rfid.c \
+SRC=*.c \
 		freemodbus/port/*.c \
 		freemodbus/modbus/mb.c \
 		freemodbus/modbus/rtu/mbrtu.c \
 		freemodbus/modbus/ascii/mbascii.c \
 		freemodbus/modbus/functions/*.c
-HDR=../tooltron_mb.h serial.h rfid.h freemodbus/port/*.h
+HDR=../tooltron_mb.h *.h freemodbus/port/*.h
 
 FLAGS=-Os -Wall -mmcu=$(MCU) -DF_CPU=$(F_CPU) -I.. \
 			-DRTS_ENABLE \

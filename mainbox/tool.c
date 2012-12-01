@@ -85,8 +85,8 @@ void tool_poll(struct tool_t *tool) {
     return;
   }
 
-  printf("new:%d en:%d req_dis:%d init:%d\n", status[MB_COIL_NEW],
-      status[MB_COIL_EN], status[MB_COIL_REQ_DIS], status[MB_COIL_INIT]);
+  /*printf("new:%d en:%d req_dis:%d init:%d\n", status[MB_COIL_NEW],
+      status[MB_COIL_EN], status[MB_COIL_REQ_DIS], status[MB_COIL_INIT]);*/
 
   if (!status[MB_COIL_INIT]) {
     tool->state = TS_INIT;
@@ -102,12 +102,11 @@ void tool_poll(struct tool_t *tool) {
       if (status[MB_COIL_NEW]) {
         tool_read_user(tool);
         // TODO check actual credentials
-        printf("user:%08x\n", tool->user);
-        //if (rand() & 1) {
+        if (rand() & 1) {
           tool_grant_access(tool);
-        /*} else {
+        } else {
           tool_deny_access(tool);
-        }*/
+        }
       }
       break;
 
