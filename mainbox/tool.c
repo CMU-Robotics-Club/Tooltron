@@ -102,7 +102,7 @@ void tool_poll(struct tool_t *tool) {
       if (status[MB_COIL_NEW]) {
         tool_read_user(tool);
         // TODO check actual credentials
-        if (rand() & 1) {
+        if (tool->user == 0x023acbf6) {
           tool_grant_access(tool);
         } else {
           tool_deny_access(tool);

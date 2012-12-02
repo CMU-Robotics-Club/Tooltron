@@ -33,7 +33,7 @@ static inline void tool_init() {DDRA |= _BV(DDA1);}
 static inline void tool_enable() {PORTA |= _BV(PA1);}
 static inline void tool_disable() {PORTA &= ~ _BV(PA1);}
 
-static char serno_zero(uint8_t *serno) {
+static inline void serno_zero(uint8_t *serno) {
   memset(serno, 0, RFID_SERNO_SIZE);
 }
 
@@ -131,7 +131,7 @@ static void tool_main() {
         toolstate = TS_REQ_DIS;
       } else if (!serno_equal(current_user, latest_reading)) {
         toolstate = TS_MISSING_ID;
-        led_blink_start(666, 6);
+        led_blink_start(666, 15, YELLOW);
       }
       break;
 
