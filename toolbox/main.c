@@ -12,6 +12,7 @@ enum toolstate_t {
   TS_INIT,
   TS_OFF,
   TS_WAIT_ACCESS,
+  TS_DENY,
   TS_REQ_DIS,
   TS_MISSING_ID,
   TS_ON
@@ -69,7 +70,7 @@ static void tool_main() {
       break;
 
     case TS_OFF:
-      led_red();
+      led_off();
       if (serno_is_nonzero(latest_reading)) {
         serno_cpy(current_user, latest_reading);
         set_coil(MB_COIL_NEW, 1);
@@ -83,9 +84,16 @@ static void tool_main() {
         tool_enable();
         toolstate = TS_ON;
       } else if (!get_coil(MB_COIL_NEW)) {
-        toolstate = TS_OFF;
+        toolstate = TS_DENY;
       }
       break;
+
+    case TS_DENY:
+      led_red();
+      if (!serno_equal(current_user, latest_reading)) {
+        toolstate = TS_OFF;
+        serno_zero(current_user);
+      }
 
     case TS_REQ_DIS:
       if (!get_coil(MB_COIL_EN)) {
