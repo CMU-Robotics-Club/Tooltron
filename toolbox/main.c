@@ -71,6 +71,7 @@ static void tool_main() {
 
     case TS_OFF:
       led_off();
+      set_coil(MB_COIL_EN, 0);
       if (serno_is_nonzero(latest_reading)) {
         serno_cpy(current_user, latest_reading);
         set_coil(MB_COIL_NEW, 1);
@@ -85,6 +86,9 @@ static void tool_main() {
         toolstate = TS_ON;
       } else if (!get_coil(MB_COIL_NEW)) {
         toolstate = TS_DENY;
+      } else if (!serno_equal(current_user, latest_reading)) {
+        set_coil(MB_COIL_NEW, 0);
+        toolstate = TS_OFF;
       }
       break;
 
