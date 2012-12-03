@@ -46,15 +46,17 @@ ISR(TIMER0_COMPA_vect) {
   error += ERROR;
   if (error >= 1000) {
     error -= 1000;
+    OCR0A = OCR+1;
   } else {
-    ms++;
-    if (ms == blink_period) {
-      blink();
-      if (blink_count == 0) {
-        TCCR0B = 0;
-      }
-      ms = 0;
+    OCR0A = OCR;
+  }
+  ms++;
+  if (ms == blink_period) {
+    blink();
+    if (blink_count == 0) {
+      TCCR0B = 0;
     }
+    ms = 0;
   }
 }
 
