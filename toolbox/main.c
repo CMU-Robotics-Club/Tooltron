@@ -7,6 +7,7 @@
 #include "tooltron_mb.h"
 #include "rfid.h"
 #include "led.h"
+#include "current.h"
 
 enum toolstate_t {
   TS_INIT,
@@ -22,6 +23,7 @@ static enum toolstate_t toolstate = TS_INIT;
 static uint8_t coils;
 static uint8_t latest_reading[RFID_SERNO_SIZE];
 static uint8_t current_user[RFID_SERNO_SIZE];
+static uint16_t current;
 
 static inline void set_coil(char coil, char bit) {
   coils = (coils & ~(1 << coil)) | (bit << coil);
@@ -235,8 +237,8 @@ eMBErrorCode eMBRegInputCB(UCHAR *reg_buf, USHORT addr, USHORT n_regs) {
       }
 
     case MB_INP_CURRENT:
-      *reg_buf++ = 0;
-      *reg_buf++ = 0;
+      *reg_buf++ = (uint8_t)(current >> 8);
+      *reg_buf++ = (uint8_t)current;
       n_regs--;
       if (n_regs == 0) {
         return MB_ENOERR;
@@ -275,9 +277,10 @@ int main() {
       rfid_get_serno(latest_reading);
       rfid_start_read();
     }
+    current = current_read();
     tool_main();
     eMBPoll();
-    _delay_ms(50);
+    _delay_ms(100);
   }
 
   return 0;
