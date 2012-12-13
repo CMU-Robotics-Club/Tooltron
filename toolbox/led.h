@@ -19,4 +19,7 @@ void led_blink_start(unsigned int period_ms, char n_times, enum color_t color);
 /* Returns nonzero if blinking has finished */
 char led_blink_done();
 
+/* Call this every TICK_MS to handle LED blinking */
+void led_tick();
+
 #endif

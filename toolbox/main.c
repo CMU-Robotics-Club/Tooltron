@@ -8,6 +8,7 @@
 #include "rfid.h"
 #include "led.h"
 #include "current.h"
+#include "time.h"
 
 enum toolstate_t {
   TS_INIT,
@@ -58,7 +59,7 @@ static void serno_cpy(uint8_t *dest, uint8_t *src) {
   memcpy(dest, src, RFID_SERNO_SIZE);
 }
 
-static void tool_main() {
+static void tool_tick() {
 
   switch (toolstate) {
 
@@ -261,10 +262,13 @@ eMBErrorCode eMBRegHoldingCB(UCHAR *reg_buf, USHORT addr, USHORT n_regs,
 }
 
 int main() {
+  char rfid_ticks = 0;
 
+  time_init();
   led_init();
   tool_init();
   rfid_init();
+  current_init();
 
   eMBInit(MB_RTU, SLAVE_ADDR, 0, MB_BAUD, MB_PAR_NONE);
   eMBEnable();
@@ -273,14 +277,22 @@ int main() {
 
   rfid_start_read();
   while (1) {
-    if (rfid_poll()) {
-      rfid_get_serno(latest_reading);
-      rfid_start_read();
+    if (++rfid_ticks >= RFID_PERIOD/TICK_MS)
+    {
+      rfid_ticks = 0;
+      if (rfid_poll()) {
+        rfid_get_serno(latest_reading);
+        rfid_start_read();
+      } else {
+        /* TODO count # times rfid_poll returns each value and see how often we
+         * have to wait */
+      }
     }
     current = current_read();
-    tool_main();
+    tool_tick();
+    led_tick();
     eMBPoll();
-    _delay_ms(100);
+    time_wait();
   }
 
   return 0;
