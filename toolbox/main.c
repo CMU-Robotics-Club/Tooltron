@@ -101,6 +101,7 @@ static void tool_tick() {
         toolstate = TS_OFF;
         serno_zero(current_user);
       }
+      break;
 
     case TS_REQ_DIS:
       if (!get_coil(MB_COIL_EN)) {
@@ -126,13 +127,11 @@ static void tool_tick() {
         toolstate = TS_REQ_DIS;
       } else if (serno_equal(current_user, latest_reading)) {
         toolstate = TS_ON;
-      } else {
-        if (led_blink_done()) {
-          set_coil(MB_COIL_EN, 0);
-          tool_disable();
-          serno_zero(current_user);
-          toolstate = TS_OFF;
-        }
+      } else if (led_blink_done()) {
+        set_coil(MB_COIL_EN, 0);
+        tool_disable();
+        serno_zero(current_user);
+        toolstate = TS_OFF;
       }
       break;
 
@@ -146,7 +145,7 @@ static void tool_tick() {
         toolstate = TS_REQ_DIS;
       } else if (!serno_equal(current_user, latest_reading)) {
         toolstate = TS_MISSING_ID;
-        led_blink_start(666, 15, YELLOW);
+        led_blink_start(500, 6, YELLOW); // TODO made 10 seconds
       }
       break;
 
@@ -262,7 +261,7 @@ eMBErrorCode eMBRegHoldingCB(UCHAR *reg_buf, USHORT addr, USHORT n_regs,
 }
 
 int main() {
-  char rfid_ticks = 0;
+  char rfid_ticks = 0, rfid_restart = 0;
 
   time_init();
   led_init();
@@ -277,16 +276,15 @@ int main() {
 
   rfid_start_read();
   while (1) {
-    if (++rfid_ticks >= RFID_PERIOD/TICK_MS)
+    if (rfid_poll()) {
+      rfid_get_serno(latest_reading);
+      rfid_restart = 1;
+    }
+    if (++rfid_ticks >= RFID_PERIOD/TICK_MS && rfid_restart)
     {
       rfid_ticks = 0;
-      if (rfid_poll()) {
-        rfid_get_serno(latest_reading);
-        rfid_start_read();
-      } else {
-        /* TODO count # times rfid_poll returns each value and see how often we
-         * have to wait */
-      }
+      rfid_restart = 0;
+      rfid_start_read();
     }
     current = current_read();
     tool_tick();

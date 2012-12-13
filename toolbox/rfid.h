@@ -4,9 +4,6 @@
 /* Bytes in serial number on rfid tags */
 #define RFID_SERNO_SIZE 4
 
-/* Number of consective read failures before giving up and returning all 0s */
-#define RFID_N_FAILURES 5
-
 /* Should be called before anything else */
 void rfid_init();
 

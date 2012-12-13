@@ -7,7 +7,8 @@
 #define OCR (F_CPU / PRESCALE / 1000UL)
 #define ERROR (F_CPU / PRESCALE - OCR * 1000UL)
 
-static char ready, ms;
+static volatile char ready;
+static char ms;
 static uint16_t error;
 
 ISR(TIMER0_COMPA_vect) {
