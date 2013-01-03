@@ -3,6 +3,8 @@
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
+AUTH_PROFILE_MODULE = 'robocrm.RoboUser'
+
 ADMINS = (
     ('Julian Binder', 'jabinder@andrew.cmu.edu'),
 )
