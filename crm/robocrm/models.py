@@ -2,6 +2,13 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 
+# Machine Model
+class Machine(models.Model):
+  type = models.CharField(max_length=20)
+  id = models.CharField(max_length=10, primary_key=True)
+  maint = models.BooleanField(default=False)
+  dstart = models.DateTimeField()
+  dend = models.DateTimeField()
 
 # User Model
 class RoboUser(models.Model):
@@ -29,7 +36,7 @@ class RoboUser(models.Model):
       (SOPHOMORE, 'Sophomore'),
       (JUNIOR, 'Junior'),
       (SENIOR, 'Senior'),
-      (MASTERs, 'Masters'),
+      (MASTERS, 'Masters'),
       (DOCTORAL, 'Doctoral'),
   )
   class_level = models.CharField(max_length=2, 
@@ -42,7 +49,7 @@ class RoboUser(models.Model):
   # Primary and Secondary Major/Minors
   major = models.CharField(max_length=20)
   sec_major_one = models.CharField(max_length=20)
-  sec_major_two = models.CharField(max_lenght=20)
+  sec_major_two = models.CharField(max_length=20)
 
   #Club Rank
   JUNIOR_MEM = 'JM'
@@ -87,16 +94,8 @@ def create_roboclub_user(sender, instance, created, **kwargs):
 post_save.connect(create_roboclub_user, sender=User)
 
 
-# Machine Model
-class Machine(models.Model)
-  type = models.CharField(max_length=20)
-  id = models.CharField(max_length=10, unique=True)
-  maint = models.BooleanField(default=False)
-  dstart = models.DateTimeField()
-  dend = models.DateTimeField()
-
 # Event Model
-class Event(models.Model)
+class Event(models.Model):
   type = models.CharField(max_length=30)
   tstart = models.DateTimeField()
   tend = models.DateTimeField()
@@ -108,20 +107,20 @@ class Event(models.Model)
   matuse = models.TextField()
 
 # Project Model
-class Project(models.Model)
+class Project(models.Model):
   name = models.CharField(max_length=30)
-  primuser = models.Foreignkey('RoboUser')
-  users = models.ManyToManyField('RoboUser')
+  primuser = models.ForeignKey('RoboUser', related_name='pri+')
+  users = models.ManyToManyField('RoboUser', related_name='u+')
   charge = models.BooleanField(default=False)
 
 # Roboclub Resources Model
-class RoboResource
+class RoboResource(models.Model):
   type = models.CharField(max_length=30)
-  id = models.CharField(max_length=20, unique=True)
+  id = models.CharField(max_length=20, primary_key=True)
   checked_out = models.BooleanField(default=False)
-  user = models.ForeignKey('RoboUser')
+  user = models.ForeignKey('RoboUser', related_name='u+')
   time_out = models.DateTimeField()
   time_due = models.DateTimeField()
-  officer = models.ForeignKey('RoboUser')
+  officer = models.ForeignKey('RoboUser', related_name='o+')
 
 
