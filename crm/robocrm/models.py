@@ -9,6 +9,9 @@ class Machine(models.Model):
   maint = models.BooleanField(default=False)
   dstart = models.DateTimeField()
   dend = models.DateTimeField()
+  
+  def __unicode__(self):
+    return u'%s %s' % (self.type, self.id)
 
 # User Model
 class RoboUser(models.Model):
@@ -87,6 +90,9 @@ class RoboUser(models.Model):
   shop_status = models.CharField(max_length=2,
                                   choices=STATUS_CHOICES,
                                   default=GOOD)
+  def __unicode__(self):
+    return self.user.username;
+
 # needed for Django Auth model
 def create_roboclub_user(sender, instance, created, **kwargs):
   if created:
@@ -105,6 +111,9 @@ class Event(models.Model):
   machine = models.ForeignKey('Machine')
   project = models.ForeignKey('Project')
   matuse = models.TextField()
+  
+  def __unicode__(self):
+    return u'%s %s %s' (self.type, self.user.username, self.succ)
 
 # Project Model
 class Project(models.Model):
@@ -112,6 +121,8 @@ class Project(models.Model):
   primuser = models.ForeignKey('RoboUser', related_name='pri+')
   users = models.ManyToManyField('RoboUser', related_name='u+')
   charge = models.BooleanField(default=False)
+  def __unicode__(self):
+    return self.name
 
 # Roboclub Resources Model
 class RoboResource(models.Model):
@@ -122,5 +133,6 @@ class RoboResource(models.Model):
   time_out = models.DateTimeField()
   time_due = models.DateTimeField()
   officer = models.ForeignKey('RoboUser', related_name='o+')
-
+  def __unicode__(self):
+    return u'%s %s %s' (self.type, self.id, self.checked_out)
 
