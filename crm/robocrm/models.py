@@ -7,8 +7,8 @@ class Machine(models.Model):
   type = models.CharField(max_length=20)
   id = models.CharField(max_length=10, primary_key=True)
   maint = models.BooleanField(default=False)
-  dstart = models.DateTimeField(blank=True)
-  dend = models.DateTimeField(blank=True)
+  dstart = models.DateTimeField(blank=True,null=True)
+  dend = models.DateTimeField(blank=True,null=True)
   
   def __unicode__(self):
     return u'%s %s' % (self.type, self.id)
@@ -130,8 +130,8 @@ class RoboResource(models.Model):
   id = models.CharField(max_length=20, primary_key=True)
   checked_out = models.BooleanField(default=False)
   user = models.ForeignKey('RoboUser', related_name='u+', blank=True)
-  time_out = models.DateTimeField(blank=True)
-  time_due = models.DateTimeField(blank=True)
+  time_out = models.DateTimeField(blank=True, null=True)
+  time_due = models.DateTimeField(blank=True, null=True)
   officer = models.ForeignKey('RoboUser', related_name='o+', blank=True)
   def __unicode__(self):
     return u'%s %s %s' (self.type, self.id, self.checked_out)
