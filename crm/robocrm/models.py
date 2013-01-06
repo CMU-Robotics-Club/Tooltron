@@ -7,8 +7,8 @@ class Machine(models.Model):
   type = models.CharField(max_length=20)
   id = models.CharField(max_length=10, primary_key=True)
   maint = models.BooleanField(default=False)
-  dstart = models.DateTimeField(blank=True)
-  dend = models.DateTimeField(blank=True)
+  dstart = models.DateTimeField(blank=True, null=True)
+  dend = models.DateTimeField(blank=True, null=True)
   
   def __unicode__(self):
     return u'%s %s' % (self.type, self.id)
@@ -19,13 +19,13 @@ class RoboUser(models.Model):
   user = models.OneToOneField(User)
 
   # Roboclub RFID Card number
-  rfid = models.DecimalField(max_digits=10, decimal_places=0, blank=True)
+  rfid = models.DecimalField(max_digits=10, decimal_places=0, blank=True, default=0)
   
   # Roboclub Shop Access Permissions
   machines = models.ManyToManyField(Machine)
 
   # Cell Phone
-  cell = models.DecimalField(max_digits=10, decimal_places=0, blank=True)
+  cell = models.DecimalField(max_digits=10, decimal_places=0, blank=True, null=True)
 
   # Class Level
   FRESHMAN = 'FR'
@@ -51,8 +51,8 @@ class RoboUser(models.Model):
 
   # Primary and Secondary Major/Minors
   major = models.CharField(max_length=20)
-  sec_major_one = models.CharField(max_length=20, blank=True)
-  sec_major_two = models.CharField(max_length=20, blank=True)
+  sec_major_one = models.CharField(max_length=20, blank=True, null=True)
+  sec_major_two = models.CharField(max_length=20, blank=True, null=True)
 
   #Club Rank
   JUNIOR_MEM = 'JM'
@@ -130,8 +130,8 @@ class RoboResource(models.Model):
   id = models.CharField(max_length=20, primary_key=True)
   checked_out = models.BooleanField(default=False)
   user = models.ForeignKey('RoboUser', related_name='u+', blank=True)
-  time_out = models.DateTimeField(blank=True)
-  time_due = models.DateTimeField(blank=True)
+  time_out = models.DateTimeField(blank=True,null=True)
+  time_due = models.DateTimeField(blank=True,null=True)
   officer = models.ForeignKey('RoboUser', related_name='o+', blank=True)
   def __unicode__(self):
     return u'%s %s %s' (self.type, self.id, self.checked_out)
