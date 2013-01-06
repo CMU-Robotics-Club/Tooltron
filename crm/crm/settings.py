@@ -1,4 +1,4 @@
-# Django settings for crm project.
+#er Django settings for crm project.
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -120,7 +120,7 @@ INSTALLED_APPS = (
     'south',
     'robocrm',
     # Uncomment the next line to enable the admin:
-    # 'django.contrib.admin',
+    'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
 )
