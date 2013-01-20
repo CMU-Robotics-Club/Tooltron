@@ -8,6 +8,7 @@ urlpatterns = patterns('',
     # Examples:
     # url(r'^$', 'crm.views.home', name='home'),
     # url(r'^crm/', include('crm.foo.urls')),
+    url(r'^roboauth/(?P<rfid_tag>\0x[0-9Aa-Ff]+)/(?P<mach_num>\d+)', 'crm.robocrm.roboauth'),
 
     # Uncomment the admin/doc line below to enable admin documentation:
     # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
