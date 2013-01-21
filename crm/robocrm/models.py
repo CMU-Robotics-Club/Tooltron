@@ -19,10 +19,10 @@ class RoboUser(models.Model):
   user = models.OneToOneField(User)
 
   # Roboclub RFID Card number
-  rfid = models.DecimalField(max_digits=10, decimal_places=0, blank=True, default=0)
+  rfid = models.CharField(max_length=10, blank=True, default=0)
   
   # Roboclub Shop Access Permissions
-  machines = models.ManyToManyField(Machine)
+  machines = models.ManyToManyField(Machine, blank=True, null=True)
 
   # Cell Phone
   cell = models.DecimalField(max_digits=10, decimal_places=0, blank=True, null=True)

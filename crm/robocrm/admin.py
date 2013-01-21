@@ -11,11 +11,13 @@ class UserProfileInLine(admin.StackedInline):
   model = RoboUser
   can_delete=False
   verbose_name_plural = 'profile'
+  filter_horizontal = ('machines',)
 
 class UserAdmin(UserAdmin):
   inlines = (UserProfileInLine, )
   list_display = ('username', 'email', 'first_name', 'last_name')
-  search_fields = ['username', 'email']
+  search_fields = ['username', 'email', 'first_name', 'last_name']
+
 
 admin.site.unregister(User)
 admin.site.register(User, UserAdmin)
