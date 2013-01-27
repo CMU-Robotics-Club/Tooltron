@@ -28,26 +28,23 @@ class RoboUser(models.Model):
   cell = models.DecimalField(max_digits=10, decimal_places=0, blank=True, null=True)
 
   # Class Level
-  FRESHMAN = 'FR'
-  SOPHOMORE = 'SO'
-  JUNIOR = 'JR'
-  SENIOR = 'SR'
-  MASTERS = 'MS'
-  DOCTORAL = 'DR'
+  UNDERGRAD = 'UG'
+  GRADUATE = 'GR'
+  AFFILIATE = 'AF'
+  OTHER = 'OH'
   CLASS_LEVEL_CHOICES = (
-      (FRESHMAN, 'Freshman'),
-      (SOPHOMORE, 'Sophomore'),
-      (JUNIOR, 'Junior'),
-      (SENIOR, 'Senior'),
-      (MASTERS, 'Masters'),
-      (DOCTORAL, 'Doctoral'),
+	(UNDERGRAD, 'Undergraduate'),
+	(GRADUATE, 'Graduate Student'),
+	(AFFILIATE, 'Non-Student CMU Affiliate'),
+	(OTHER, 'Other User'),
   )
   class_level = models.CharField(max_length=2, 
                                  choices=CLASS_LEVEL_CHOICES,
-                                 default=FRESHMAN)
+                                 default=UNDERGRAD)
 
   # Graduation Year
-  grad_year = models.DecimalField(max_digits=4, decimal_places=0)
+  #grad_year = models.DecimalField(max_digits=4, decimal_places=0)
+  grad_year = models.IntegerField(blank=True, null=True)
 
   # Primary and Secondary Major/Minors
   major = models.CharField(max_length=20)
@@ -68,7 +65,7 @@ class RoboUser(models.Model):
                                default=JUNIOR_MEM)
   
   # Roboclub Transaction Info
-  dues_paid = models.DateField()
+  dues_paid = models.DateField(blank=True, null=True)
   tshirt_rec = models.BooleanField(default=False)
   
   # Shop and E-Bench Status
