@@ -1,4 +1,5 @@
 #include "tool.h"
+#include "query.h"
 #include <unistd.h>
 #include <signal.h>
 #include <strings.h>
@@ -18,18 +19,50 @@ void sigint(int sig) {
   run = 0;
 }
 
+void print_usage(const char *name) {
+  printf("Usage: %s [-h] [-d serial_device] [-s db_server[:port]]\n", name);
+  printf("       -h prints this message\n");
+  printf("       -d specifies the serial port for Modbus\n");
+  printf("          defaults to /dev/ttyUSB0\n");
+  printf("       -s specifies the server where the CRM is running\n");
+  printf("          defaults to minecraft.roboclub.org:8000\n");
+}
+
 int main(int argc, char **argv) {
-  int i;
+  int i, opt;
   struct sigaction sigact;
   const char *device = "/dev/ttyUSB0";
+  const char *server = "minecraft.roboclub.org:8000";
 
-  // TODO getopts to get device name
+  while ((opt = getopt(argc, argv, "hd:s:")) != -1) {
+    switch (opt) {
+      case 'h':
+        print_usage(argv[0]);
+        return 0;
+      case 'd':
+        device = optarg;
+        break;
+      case 's':
+        server = optarg;
+        break;
+      default:
+        print_usage(argv[0]);
+        return 1;
+    }
+  }
+
+  printf("Serial device: %s\n", device);
+  printf("CRM server: http://%s/\n", server);
 
   bzero(&sigact, sizeof(sigact));
   sigact.sa_handler = sigint;
   sigact.sa_flags = SA_RESTART;
   sigemptyset(&sigact.sa_mask);
   sigaction(SIGINT, &sigact, NULL);
+
+  if (query_init(server)) {
+    return 1;
+  }
 
   if (tool_init_mb(device)) {
     return 1;

@@ -2,8 +2,12 @@
 #include <stdio.h>
 #include <curl/curl.h>
 
-int query_init() {
+const char *server;
+
+int query_init(const char *server_name) {
   CURLcode error_code;
+
+  server = server_name;
 
   error_code = curl_global_init(CURL_GLOBAL_NOTHING);
   if (error_code)
@@ -18,8 +22,14 @@ void query_cleanup() {
 
 static size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp) {
   int *resultp = userp;
+  char *str = buffer;
 
-  return fwrite(buffer, size, nmemb, stdout);
+  if (size*nmemb > 0 && str[0] == '1')
+    *resultp = 1;
+  else
+    *resultp = 0;
+
+  return nmemb;
 }
 
 int query_user_permission(int tool_id, int user_id) {
@@ -32,8 +42,7 @@ int query_user_permission(int tool_id, int user_id) {
   if (handle == NULL)
     return 0;
 
-  sprintf(url, "http://roboclub.org/tooltron/%08x/%d/", user_id, tool_id);
-  /* TODO temporary */ sprintf(url, "http://www.google.com");
+  sprintf(url, "http://%s/roboauth/%08x/%d/", server, user_id, tool_id);
   error_code = curl_easy_setopt(handle, CURLOPT_URL, url);
   if (error_code) goto error;
 
@@ -51,7 +60,7 @@ int query_user_permission(int tool_id, int user_id) {
 
 error:
   fprintf(stderr, "curl: %s\n", curl_easy_strerror(error_code));
-  fprintf(stderr, "     when authenticating user %08x on tool %d\n",
+  fprintf(stderr, "      when authenticating user %08x on tool %d\n",
       user_id, tool_id);
   curl_easy_cleanup(handle);
   return 0;
