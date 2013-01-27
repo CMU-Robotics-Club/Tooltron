@@ -2132,6 +2132,8 @@ Please make sure your boards conform to these design rules.</description>
 <contactref element="JP4" pad="3"/>
 <wire x1="22.5679" y1="21.5138" x2="26.5049" y2="21.5138" width="0.6096" layer="1"/>
 <wire x1="26.5049" y1="21.5138" x2="26.5049" y2="22.6568" width="0.6096" layer="1"/>
+<via x="84.1375" y="4.7625" extent="1-16" drill="3.2" diameter="6.4516"/>
+<via x="84.1375" y="49.2125" extent="1-16" drill="3.2" diameter="6.4516"/>
 </signal>
 <signal name="N$3">
 <contactref element="U4" pad="5"/>
