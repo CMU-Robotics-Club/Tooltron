@@ -7,8 +7,9 @@
 
 #define SLEEP_MS 250
 
-struct tool_t tools[] = {
-  {4, "test", TS_INIT}
+static struct tool_t tools[] = {
+  TOOL_DECL("testa", 4),
+  TOOL_DECL("testb", 5)
 };
 
 #define N_TOOLS (sizeof(tools)/sizeof(struct tool_t))
