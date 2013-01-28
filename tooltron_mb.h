@@ -40,7 +40,7 @@
 /*
  * Other things
  */
-#define SLAVE_ADDR 4 // TODO move to makefile?
+
 #define MB_BAUD 9600
 
 #endif

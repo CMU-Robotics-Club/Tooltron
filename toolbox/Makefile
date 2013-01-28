@@ -9,9 +9,10 @@ SRC=*.c \
 		freemodbus/modbus/ascii/mbascii.c \
 		freemodbus/modbus/functions/*.c
 HDR=../tooltron_mb.h *.h freemodbus/port/*.h
+TOOL_ADDRESS?=-1
 
 FLAGS=-Os -Wall -mmcu=$(MCU) -DF_CPU=$(F_CPU) -I.. \
-			-DRTS_ENABLE \
+			-DRTS_ENABLE -DTOOL_ADDRESS=$(TOOL_ADDRESS) \
 			-Ifreemodbus/port \
 			-Ifreemodbus/modbus/rtu \
 			-Ifreemodbus/modbus/ascii \

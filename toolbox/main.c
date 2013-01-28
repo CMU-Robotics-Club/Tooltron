@@ -10,6 +10,10 @@
 #include "current.h"
 #include "time.h"
 
+#if TOOL_ADDRESS < 0
+#error Please define TOOL_ADDRESS
+#endif
+
 enum toolstate_t {
   TS_INIT,
   TS_OFF,
@@ -25,6 +29,7 @@ static uint8_t coils;
 static uint8_t latest_reading[RFID_SERNO_SIZE];
 static uint8_t current_user[RFID_SERNO_SIZE];
 static uint16_t current;
+static uint16_t current_max_warn, current_max_hard;
 
 static inline void set_coil(char coil, char bit) {
   coils = (coils & ~(1 << coil)) | (bit << coil);
@@ -269,7 +274,7 @@ int main() {
   rfid_init();
   current_init();
 
-  eMBInit(MB_RTU, SLAVE_ADDR, 0, MB_BAUD, MB_PAR_NONE);
+  eMBInit(MB_RTU, TOOL_ADDRESS, 0, MB_BAUD, MB_PAR_NONE);
   eMBEnable();
 
   sei();
