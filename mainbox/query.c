@@ -37,6 +37,7 @@ int query_user_permission(int tool_id, int user_id) {
   CURLcode error_code;
   char url[1024];
   int result = 0;
+  long response = 0;
 
   handle = curl_easy_init();
   if (handle == NULL)
@@ -54,6 +55,13 @@ int query_user_permission(int tool_id, int user_id) {
 
   error_code = curl_easy_perform(handle);
   if (error_code) goto error;
+
+  error_code = curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &response);
+  if (error_code) goto error;
+  if (response >= 400)
+    fprintf(stderr, "Error %ld from %s\n", response, url);
+  else if (response > 200)
+    fprintf(stderr, "Warning: response %ld from %s\n", response, url);
 
   curl_easy_cleanup(handle);
   return result;

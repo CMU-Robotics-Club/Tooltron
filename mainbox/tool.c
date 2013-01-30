@@ -4,7 +4,6 @@
 #include <modbus.h>
 #include <stdio.h>
 #include <errno.h>
-#include <stdlib.h> // TODO temporary
 
 modbus_t *ctx;
 
