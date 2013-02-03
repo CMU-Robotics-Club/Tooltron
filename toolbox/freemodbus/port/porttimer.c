@@ -22,7 +22,6 @@
 /* ----------------------- AVR includes -------------------------------------*/
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include <avr/signal.h>
 
 /* ----------------------- Platform includes --------------------------------*/
 #include "port.h"
