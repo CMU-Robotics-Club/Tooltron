@@ -2,6 +2,6 @@
 #define CURRENT_H
 
 void current_init();
-int current_read();
+unsigned int current_read();
 
 #endif
