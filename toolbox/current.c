@@ -15,18 +15,18 @@ unsigned long sum_sq;
 
 void current_init() {
 
-  /*
-   * COM0A = 0, disconnect pin
-   * WGM0 = 2, clear timer on compare
-   */
-  TCCR0A |= _BV(WGM01);
+  /* TODO reduce power consumption with DIDR* */
 
   /*
-   * CS0 = 5, 1024 prescaler
+   * COM1A = COM1B = 0, disconnect pins
+   * WGM1 = 4, clear timer on compare A
+   * CS1 = 5, 1024 prescaler
    */
-  TCCR0B |= _BV(CS02) | _BV(CS00);
+  TCCR1B |= _BV(WGM12) | _BV(CS12) | _BV(CS10);
 
-  OCR0A = F_CPU / 1024 / SAMPLES_PER_CYCLE / CYCLES_PER_SECOND;
+  /* Timer is cleared on A, ADC is triggered on B */
+  OCR1A = F_CPU / 1024 / SAMPLES_PER_CYCLE / CYCLES_PER_SECOND;
+  OCR1B = 0;
 
   /*
    * REFS = 0, Vcc reference (set to 2 for internal 1.1V reference)
@@ -34,13 +34,11 @@ void current_init() {
    */
   ADMUX = _BV(MUX3);
 
-  /* TODO reduce power consumption with DIDR* */
-
   /*
    * ADLAR = 0, right adjust result
-   * ADTS = 3, start on timer 0 compare match A
+   * ADTS = 5, start on timer 1 compare match B
    */
-  ADCSRB = _BV(ADTS1) | _BV(ADTS0);
+  ADCSRB = _BV(ADTS2) | _BV(ADTS0);
 
   /*
    * ADEN = 1, enable

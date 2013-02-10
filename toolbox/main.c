@@ -29,7 +29,7 @@ static uint8_t coils;
 static uint8_t latest_reading[RFID_SERNO_SIZE];
 static uint8_t current_user[RFID_SERNO_SIZE];
 static uint16_t current;
-static uint16_t current_max_warn, current_max_hard;
+//static uint16_t current_max_warn, current_max_hard;
 
 static inline void set_coil(char coil, char bit) {
   coils = (coils & ~(1 << coil)) | (bit << coil);
