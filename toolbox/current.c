@@ -4,8 +4,8 @@
 #include <math.h>
 
 #define CYCLES_PER_SECOND 60 // wall power
-#define SAMPLES_PER_CYCLE 10
-#define N_SAMPLES 20
+#define SAMPLES_PER_CYCLE 16
+#define N_SAMPLES 48
 
 unsigned int samples[N_SAMPLES];
 int sample_idx;
@@ -93,5 +93,6 @@ unsigned int current_read() {
   sei();
 
   /* calculate the variance using sum and sum_sq */
-  return (N_SAMPLES*_sum_sq - _sum*_sum) / (N_SAMPLES*(N_SAMPLES-1));
+  return (N_SAMPLES*_sum_sq - (unsigned long)_sum*_sum) /
+    (N_SAMPLES*(N_SAMPLES-1));
 }
