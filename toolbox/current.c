@@ -20,19 +20,20 @@ void current_init() {
   /*
    * COM1A = COM1B = 0, disconnect pins
    * WGM1 = 4, clear timer on compare A
-   * CS1 = 5, 1024 prescaler
+   * CS1 = 1, no prescaler
    */
-  TCCR1B |= _BV(WGM12) | _BV(CS12) | _BV(CS10);
+  TCCR1B = _BV(WGM12) | _BV(CS10);
 
   /* Timer is cleared on A, ADC is triggered on B */
-  OCR1A = F_CPU / 1024 / SAMPLES_PER_CYCLE / CYCLES_PER_SECOND;
-  OCR1B = 0;
+  OCR1A = F_CPU / SAMPLES_PER_CYCLE / CYCLES_PER_SECOND;
+  OCR1B = OCR1A;
 
   /*
    * REFS = 0, Vcc reference (set to 2 for internal 1.1V reference)
    * MUX = 8, PB3(ADC8)
    */
   ADMUX = _BV(MUX3);
+  DIDR1 |= _BV(ADC8D);
 
   /*
    * ADLAR = 0, right adjust result
@@ -45,13 +46,17 @@ void current_init() {
    * ADSC = 0, don't start yet
    * ADATE = 1, auto trigger
    * ADIE = 1, enable interrupt
-   * ADPS = 4, prescale clock by 16
+   * ADPS = 6, prescale clock by 64
    */
-  ADCSRA |= _BV(ADEN) | _BV(ADATE) | _BV(ADIE) | _BV(ADPS2);
+  ADCSRA = _BV(ADEN) | _BV(ADATE) | _BV(ADIE) | _BV(ADPS2) | _BV(ADPS1);
 }
 
 ISR(ADC_vect) {
   unsigned int old, new;
+
+  /* clear the timer interrupt flag so that the ADC will be triggered again
+   * next time the timer resets */
+  TIFR |= _BV(OCF1B);
 
   new = ADC;
 
