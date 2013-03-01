@@ -33,7 +33,6 @@ void current_init() {
    * MUX = 8, PB3(ADC8)
    */
   ADMUX = _BV(MUX3);
-  DIDR1 |= _BV(ADC8D);
 
   /*
    * ADLAR = 0, right adjust result
@@ -69,24 +68,9 @@ ISR(ADC_vect) {
   /* keep a running total of samples and samples squared */
   sum += new;
   sum -= old;
-  sum_sq += new*new;
-  sum_sq -= old*old;
+  sum_sq += (unsigned long)new*new;
+  sum_sq -= (unsigned long)old*old;
 }
-
-/*unsigned char isqrt(unsigned int x) {
-  unsigned int sqrt, mulmask;
-  sqrt = 0;
-  mulmask = 0x80;
-  if (x > 0) {
-    while (mulmask) {
-      sqrt |= mulmask;
-      if (sqrt * sqrt > x)
-        sqrt &= ~mulmask;
-      mulmask >>= 1;
-    }
-  }
-  return sqrt;
-}*/
 
 unsigned int current_read() {
   unsigned int _sum;
