@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [ -d ~/.env/tooltron ]; then
+  echo ~/.env/tooltron already exists';' just running update.
+else
+  mkdir -p ~/.env
+  virtualenv ~/.env/tooltron
+fi
+
+cd "$(dirname "$0")"
+source enter-env
+pip install -r requirements.txt

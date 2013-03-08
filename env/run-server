@@ -1,0 +1,5 @@
+#!/bin/bash
+
+cd "$(dirname "$0")"
+source enter-env
+exec ../crm/manage.py runserver 0.0.0.0:8000
