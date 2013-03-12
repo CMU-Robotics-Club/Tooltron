@@ -1,5 +1,5 @@
-SRC=main.c tool.c query.c
-HDR=tool.h query.h ../tooltron_mb.h
+SRC=main.c tool.c query.c event.c
+HDR=tool.h query.h event.h ../tooltron_mb.h
 
 FLAGS=-O2 -g -Wall -I.. `pkg-config --cflags --libs libmodbus libcurl`
 

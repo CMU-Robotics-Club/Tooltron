@@ -1,4 +1,5 @@
 #include "query.h"
+#include "event.h"
 #include <stdio.h>
 #include <curl/curl.h>
 
@@ -20,7 +21,7 @@ void query_cleanup() {
   curl_global_cleanup();
 }
 
-static size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp) {
+static size_t write_bool(void *buffer, size_t size, size_t nmemb, void *userp) {
   int *resultp = userp;
   char *str = buffer;
 
@@ -32,7 +33,13 @@ static size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp) {
   return nmemb;
 }
 
-int query_user_permission(int tool_id, int user_id) {
+/*
+ * query_user_permission
+ *
+ * Makes an HTTP request to the CRM server to see if user_id has access to
+ * tool_id. Returns 1 if the server replies with '1' or 0 otherwise.
+ */
+int query_user_permission(int tool_id, unsigned int user_id) {
   CURL* handle;
   CURLcode error_code;
   char url[1024];
@@ -47,7 +54,7 @@ int query_user_permission(int tool_id, int user_id) {
   error_code = curl_easy_setopt(handle, CURLOPT_URL, url);
   if (error_code) goto error;
 
-  error_code = curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_data);
+  error_code = curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_bool);
   if (error_code) goto error;
 
   error_code = curl_easy_setopt(handle, CURLOPT_WRITEDATA, &result);
@@ -72,4 +79,84 @@ error:
       user_id, tool_id);
   curl_easy_cleanup(handle);
   return 0;
+}
+
+/*
+ * query_add_event
+ *
+ * Makes an HTTPS POST request to add an event to the CRM server, including
+ * user, tool, start time, and stop time. Reads the password from password.txt.
+ * Returns 0 if successful, or 1 if there was an error and the caller should
+ * try the same event again later.
+ *
+ * Times are represented as strftime's "%F %T", which is like "YYYY-MM-DD
+ * HH:MM:SS" with 24-hour time
+ */
+int query_add_event(struct event_t *event) {
+  CURL* handle;
+  CURLcode error_code;
+  struct curl_httppost *formpost = NULL, *lastptr = NULL;
+  char buf[1024];
+  struct tm *timeinfo;
+  long response = 0;
+
+  handle = curl_easy_init();
+  if (handle == NULL)
+    return 1;
+
+  curl_formadd(&formpost, &lastptr,
+      CURLFORM_COPYNAME, "type",
+      CURLFORM_COPYCONTENTS, "usage",
+      CURLFORM_END);
+
+  timeinfo = localtime(&event->tstart);
+  strftime(buf, sizeof(buf), "%F %T", timeinfo);
+  curl_formadd(&formpost, &lastptr,
+      CURLFORM_COPYNAME, "tstart",
+      CURLFORM_COPYCONTENTS, buf,
+      CURLFORM_END);
+
+  timeinfo = localtime(&event->tend);
+  strftime(buf, sizeof(buf), "%F %T", timeinfo);
+  curl_formadd(&formpost, &lastptr,
+      CURLFORM_COPYNAME, "tend",
+      CURLFORM_COPYCONTENTS, buf,
+      CURLFORM_END);
+
+  sprintf(buf, "%08x", event->user);
+  curl_formadd(&formpost, &lastptr,
+      CURLFORM_COPYNAME, "user",
+      CURLFORM_COPYCONTENTS, buf,
+      CURLFORM_END);
+
+  sprintf(buf, "%d", event->tool_id);
+  curl_formadd(&formpost, &lastptr,
+      CURLFORM_COPYNAME, "machine",
+      CURLFORM_COPYCONTENTS, buf,
+      CURLFORM_END);
+
+  sprintf(buf, "https://%s/add_event/", server);
+  error_code = curl_easy_setopt(handle, CURLOPT_URL, buf);
+  if (error_code) goto error;
+
+  error_code = curl_easy_setopt(handle, CURLOPT_HTTPPOST, formpost);
+  if (error_code) goto error;
+
+  error_code = curl_easy_perform(handle);
+  if (error_code) goto error;
+
+  error_code = curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &response);
+  if (error_code) goto error;
+  if (response >= 400)
+    fprintf(stderr, "Error %ld from %s\n", response, buf);
+  else if (response > 200)
+    fprintf(stderr, "Warning: response %ld from %s\n", response, buf);
+
+  curl_easy_cleanup(handle);
+  return response >= 300;
+
+error:
+  fprintf(stderr, "curl: %s\n", curl_easy_strerror(error_code));
+  curl_easy_cleanup(handle);
+  return 1;
 }

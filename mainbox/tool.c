@@ -1,5 +1,6 @@
 #include "tool.h"
 #include "query.h"
+#include "event.h"
 #include "tooltron_mb.h"
 #include <modbus.h>
 #include <stdio.h>
@@ -60,6 +61,10 @@ static void tool_grant_access(struct tool_t *tool) {
       tool->address);
   tool_write_coil(MB_COIL_EN, 1);
   tool->state = TS_ON;
+  tool->event = event_alloc();
+  tool->event->user = tool->user;
+  tool->event->tool_id = tool->address;
+  tool->event->tstart = time(NULL);
 }
 
 static void tool_deny_access(struct tool_t *tool) {
@@ -67,6 +72,13 @@ static void tool_deny_access(struct tool_t *tool) {
       tool->address);
   tool_write_coil(MB_COIL_EN, 0);
   tool->state = TS_OFF;
+}
+
+static void tool_off(struct tool_t *tool) {
+  tool->state = TS_OFF;
+  tool->event->tend = time(NULL);
+  event_q_push(tool->event);
+  tool->event = NULL;
 }
 
 void tool_request_disable(struct tool_t *tool) {
@@ -130,7 +142,7 @@ void tool_poll(struct tool_t *tool) {
     case TS_ON:
       if (!status[MB_COIL_EN]) {
         printf("Tool %s (%d) is off\n", tool->name, tool->address);
-        tool->state = TS_OFF;
+        tool_off(tool);
       }
       break;
 
@@ -138,7 +150,7 @@ void tool_poll(struct tool_t *tool) {
       if (!status[MB_COIL_EN]) {
         printf("Tool %s (%d) is off after requested disable\n", tool->name,
             tool->address);
-        tool->state = TS_OFF;
+        tool_off(tool);
       }
       break;
 

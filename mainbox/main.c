@@ -5,11 +5,18 @@
 #include <strings.h>
 #include <stdio.h>
 
-#define SLEEP_MS 250
+#define SLEEP_MS 10//250
 
 static struct tool_t tools[] = {
-  TOOL_DECL("testa", 4),
-  TOOL_DECL("testb", 5)
+  TOOL_DECL("test1", 1),
+  TOOL_DECL("test2", 2),
+  TOOL_DECL("test3", 3),
+  TOOL_DECL("test4", 4),
+  TOOL_DECL("test5", 5),
+  TOOL_DECL("test6", 6),
+  TOOL_DECL("test7", 7),
+  TOOL_DECL("test8", 8),
+  TOOL_DECL("test9", 9)
 };
 
 #define N_TOOLS (sizeof(tools)/sizeof(struct tool_t))
@@ -74,6 +81,7 @@ int main(int argc, char **argv) {
   i = 0;
   while (run) {
     tool_poll(&tools[i]);
+    event_q_process();
     usleep(SLEEP_MS * (useconds_t)1000);
     i = (i+1) % N_TOOLS;
   }
