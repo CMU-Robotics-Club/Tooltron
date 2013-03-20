@@ -1,24 +1,40 @@
 #include "query.h"
 #include "event.h"
+#include "util.h"
+#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <curl/curl.h>
 
 const char *server;
+char *tooltron_password;
 
 int query_init(const char *server_name) {
   CURLcode error_code;
+  int len;
 
   server = server_name;
 
   error_code = curl_global_init(CURL_GLOBAL_SSL);
-  if (error_code)
+  if (error_code) {
     fprintf(stderr, "curl_global_init: %s\n", curl_easy_strerror(error_code));
+    return error_code;
+  }
 
-  return error_code;
+  tooltron_password = read_file("tooltron_password");
+  if (!tooltron_password)
+    return 1;
+  len = strlen(tooltron_password);
+  while (len > 0 && tooltron_password[len-1] == '\n')
+    tooltron_password[--len] = '\0';
+
+  return 0;
 }
 
 void query_cleanup() {
   curl_global_cleanup();
+  if (tooltron_password)
+    free(tooltron_password);
 }
 
 static size_t write_bool(void *buffer, size_t size, size_t nmemb, void *userp) {
@@ -108,6 +124,16 @@ int query_add_event(struct event_t *event) {
   handle = curl_easy_init();
   if (handle == NULL)
     return 1;
+
+  curl_formadd(&formpost, &lastptr,
+      CURLFORM_COPYNAME, "username",
+      CURLFORM_COPYCONTENTS, "tooltron",
+      CURLFORM_END);
+
+  curl_formadd(&formpost, &lastptr,
+      CURLFORM_COPYNAME, "password",
+      CURLFORM_COPYCONTENTS, tooltron_password,
+      CURLFORM_END);
 
   curl_formadd(&formpost, &lastptr,
       CURLFORM_COPYNAME, "type",
