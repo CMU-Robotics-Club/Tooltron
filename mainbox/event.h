@@ -11,6 +11,12 @@ struct event_t {
   struct event_t *next;
 };
 
+/*
+ * After event_alloc, you must call either event_free or event_q_push.
+ * Periodically call event_q_process to send events in the queue to the server.
+ * When an event is successfully sent, the event will be removed from the queue
+ * and freed.
+ */
 struct event_t *event_alloc();
 void event_free(struct event_t *event);
 void event_q_push(struct event_t *event);

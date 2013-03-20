@@ -18,6 +18,7 @@ void event_q_push(struct event_t *event) {
   else
     head = event;
   tail = event;
+  event->next = NULL;
 }
 
 void event_q_process() {

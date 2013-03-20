@@ -10,7 +10,7 @@ int query_init(const char *server_name) {
 
   server = server_name;
 
-  error_code = curl_global_init(CURL_GLOBAL_NOTHING);
+  error_code = curl_global_init(CURL_GLOBAL_SSL);
   if (error_code)
     fprintf(stderr, "curl_global_init: %s\n", curl_easy_strerror(error_code));
 
@@ -30,6 +30,11 @@ static size_t write_bool(void *buffer, size_t size, size_t nmemb, void *userp) {
   else
     *resultp = 0;
 
+  return nmemb;
+}
+
+static size_t write_ignore(void *buffer, size_t size, size_t nmemb,
+    void *userp) {
   return nmemb;
 }
 
@@ -139,6 +144,12 @@ int query_add_event(struct event_t *event) {
   error_code = curl_easy_setopt(handle, CURLOPT_URL, buf);
   if (error_code) goto error;
 
+  error_code = curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, 0L);
+  if (error_code) goto error;
+
+  error_code = curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_ignore);
+  if (error_code) goto error;
+
   error_code = curl_easy_setopt(handle, CURLOPT_HTTPPOST, formpost);
   if (error_code) goto error;
 
@@ -153,10 +164,12 @@ int query_add_event(struct event_t *event) {
     fprintf(stderr, "Warning: response %ld from %s\n", response, buf);
 
   curl_easy_cleanup(handle);
+  curl_formfree(formpost);
   return response >= 300;
 
 error:
   fprintf(stderr, "curl: %s\n", curl_easy_strerror(error_code));
   curl_easy_cleanup(handle);
+  curl_formfree(formpost);
   return 1;
 }
