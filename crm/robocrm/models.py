@@ -88,7 +88,7 @@ class RoboUser(models.Model):
                                   choices=STATUS_CHOICES,
                                   default=GOOD)
   def __unicode__(self):
-    return self.user.username;
+    return self.user.username
 
 # needed for Django Auth model
 def create_roboclub_user(sender, instance, created, **kwargs):
@@ -106,11 +106,11 @@ class Event(models.Model):
   succ = models.BooleanField(default=False)
   imgurl = models.URLField()
   machine = models.ForeignKey('Machine')
-  project = models.ForeignKey('Project')
+  project = models.ForeignKey('Project', null=True)
   matuse = models.TextField()
   
   def __unicode__(self):
-    return u'%s %s %s' (self.type, self.user.username, self.succ)
+    return u'%s %s %s'%(self.type, self.user.user.username, self.succ)
 
 # Project Model
 class Project(models.Model):
