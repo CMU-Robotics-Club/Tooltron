@@ -57,21 +57,36 @@ static void tool_read_user(struct tool_t *tool) {
 }
 
 static void tool_grant_access(struct tool_t *tool) {
+
   printf("Granting access to %08x on %s (%d)\n", tool->user, tool->name,
       tool->address);
+
   tool_write_coil(MB_COIL_EN, 1);
   tool->state = TS_ON;
+
   tool->event = event_alloc();
   tool->event->user = tool->user;
   tool->event->tool_id = tool->address;
   tool->event->tstart = time(NULL);
+  tool->event->succ = 1;
 }
 
 static void tool_deny_access(struct tool_t *tool) {
+  struct event_t *event;
+
   printf("Denying access to %08x on %s (%d)\n", tool->user, tool->name,
       tool->address);
+
   tool_write_coil(MB_COIL_EN, 0);
   tool->state = TS_OFF;
+
+  event = event_alloc();
+  event->user = tool->user;
+  event->tool_id = tool->address;
+  event->tstart = time(NULL);
+  event->tend = event->tstart;
+  event->succ = 0;
+  event_q_push(event);
 }
 
 static void tool_off(struct tool_t *tool) {

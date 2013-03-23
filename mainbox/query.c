@@ -135,11 +135,6 @@ int query_add_event(struct event_t *event) {
       CURLFORM_COPYCONTENTS, tooltron_password,
       CURLFORM_END);
 
-  curl_formadd(&formpost, &lastptr,
-      CURLFORM_COPYNAME, "type",
-      CURLFORM_COPYCONTENTS, "usage",
-      CURLFORM_END);
-
   timeinfo = localtime(&event->tstart);
   strftime(buf, sizeof(buf), "%F %T", timeinfo);
   curl_formadd(&formpost, &lastptr,
@@ -156,25 +151,38 @@ int query_add_event(struct event_t *event) {
 
   sprintf(buf, "%08x", event->user);
   curl_formadd(&formpost, &lastptr,
-      CURLFORM_COPYNAME, "user",
+      CURLFORM_COPYNAME, "user_id",
       CURLFORM_COPYCONTENTS, buf,
       CURLFORM_END);
 
   sprintf(buf, "%d", event->tool_id);
   curl_formadd(&formpost, &lastptr,
-      CURLFORM_COPYNAME, "machine",
+      CURLFORM_COPYNAME, "machine_id",
       CURLFORM_COPYCONTENTS, buf,
       CURLFORM_END);
 
-  sprintf(buf, "https://%s/add_event/", server);
+  curl_formadd(&formpost, &lastptr,
+      CURLFORM_COPYNAME, "succ",
+      CURLFORM_COPYCONTENTS, event->succ? "1" : "0",
+      CURLFORM_END);
+
+  sprintf(buf, "https://%s/add_card_event/", server);
+  //sprintf(buf, "http://%s/add_card_event/", server);
   error_code = curl_easy_setopt(handle, CURLOPT_URL, buf);
   if (error_code) goto error;
 
   error_code = curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, 0L);
   if (error_code) goto error;
 
+  /* TODO TEMPORARY */
+  FILE *tmp = fopen("temp.html", "w");
+  error_code = curl_easy_setopt(handle, CURLOPT_WRITEDATA, tmp);
+  if (error_code) goto error;
+
+  /*
   error_code = curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_ignore);
   if (error_code) goto error;
+  */
 
   error_code = curl_easy_setopt(handle, CURLOPT_HTTPPOST, formpost);
   if (error_code) goto error;
@@ -191,6 +199,7 @@ int query_add_event(struct event_t *event) {
 
   curl_easy_cleanup(handle);
   curl_formfree(formpost);
+  fclose(tmp);
   return response >= 300;
 
 error:

@@ -6,6 +6,7 @@
 struct event_t {
   unsigned int user;
   int tool_id;
+  int succ;
   time_t tstart;
   time_t tend;
   struct event_t *next;
