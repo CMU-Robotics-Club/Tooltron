@@ -33,10 +33,10 @@ class RoboUser(models.Model):
   AFFILIATE = 'AF'
   OTHER = 'OH'
   CLASS_LEVEL_CHOICES = (
-	(UNDERGRAD, 'Undergraduate'),
-	(GRADUATE, 'Graduate Student'),
-	(AFFILIATE, 'Non-Student CMU Affiliate'),
-	(OTHER, 'Other User'),
+      (UNDERGRAD, 'Undergraduate'),
+      (GRADUATE, 'Graduate Student'),
+      (AFFILIATE, 'Non-Student CMU Affiliate'),
+      (OTHER, 'Other User'),
   )
   class_level = models.CharField(max_length=2, 
                                  choices=CLASS_LEVEL_CHOICES,
@@ -89,13 +89,6 @@ class RoboUser(models.Model):
                                   default=GOOD)
   def __unicode__(self):
     return self.user.username
-
-# needed for Django Auth model
-def create_roboclub_user(sender, instance, created, **kwargs):
-  if created:
-      RoboUser.objects.create(user=instance)
-post_save.connect(create_roboclub_user, sender=User)
-
 
 # Event Model
 class Event(models.Model):
