@@ -266,7 +266,7 @@ eMBErrorCode eMBRegHoldingCB(UCHAR *reg_buf, USHORT addr, USHORT n_regs,
 }
 
 int main() {
-  char rfid_ticks = 0, rfid_restart = 0;
+  char rfid_ticks = 0;
 
   time_init();
   led_init();
@@ -283,12 +283,10 @@ int main() {
   while (1) {
     if (rfid_poll()) {
       rfid_get_serno(latest_reading);
-      rfid_restart = 1;
     }
-    if (++rfid_ticks >= RFID_PERIOD/TICK_MS && rfid_restart)
+    if (++rfid_ticks >= RFID_PERIOD/TICK_MS)
     {
       rfid_ticks = 0;
-      rfid_restart = 0;
       rfid_start_read();
     }
     current = current_read();
