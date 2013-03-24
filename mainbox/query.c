@@ -6,6 +6,9 @@
 #include <string.h>
 #include <curl/curl.h>
 
+/* Outputs the response to /add_card_event to debug.html */
+//#define DEBUG_EVENT_RESPONSE
+
 const char *server;
 char *tooltron_password;
 
@@ -121,6 +124,11 @@ int query_add_event(struct event_t *event) {
   struct tm *timeinfo;
   long response = 0;
 
+#ifdef DEBUG_EVENT_RESPONSE
+  FILE *fdebug;
+  fdebug = fopen("debug.html", "w");
+#endif
+
   handle = curl_easy_init();
   if (handle == NULL)
     return 1;
@@ -171,18 +179,20 @@ int query_add_event(struct event_t *event) {
   error_code = curl_easy_setopt(handle, CURLOPT_URL, buf);
   if (error_code) goto error;
 
+  /* TODO disabling host and peer verification should theoretically be removed
+   * eventually */
   error_code = curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, 0L);
   if (error_code) goto error;
 
-  /* TODO TEMPORARY */
-  FILE *tmp = fopen("temp.html", "w");
-  error_code = curl_easy_setopt(handle, CURLOPT_WRITEDATA, tmp);
+  error_code = curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
   if (error_code) goto error;
 
-  /*
+#ifdef DEBUG_EVENT_RESPONSE
+  error_code = curl_easy_setopt(handle, CURLOPT_WRITEDATA, fdebug);
+#else
   error_code = curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_ignore);
+#endif
   if (error_code) goto error;
-  */
 
   error_code = curl_easy_setopt(handle, CURLOPT_HTTPPOST, formpost);
   if (error_code) goto error;
@@ -199,12 +209,17 @@ int query_add_event(struct event_t *event) {
 
   curl_easy_cleanup(handle);
   curl_formfree(formpost);
-  fclose(tmp);
+#ifdef DEBUG_EVENT_RESPONSE
+  fclose(fdebug);
+#endif
   return response >= 300;
 
 error:
   fprintf(stderr, "curl: %s\n", curl_easy_strerror(error_code));
   curl_easy_cleanup(handle);
   curl_formfree(formpost);
+#ifdef DEBUG_EVENT_RESPONSE
+  fclose(fdebug);
+#endif
   return 1;
 }
