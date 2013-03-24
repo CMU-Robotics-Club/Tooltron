@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ "$1" = "" ]; then
+  echo Usage: ./program_tool number
+  exit 1
+fi
+
+exec make -B TOOL_ADDRESS=$1 program
