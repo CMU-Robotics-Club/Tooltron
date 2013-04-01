@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.contrib import admin
 from django.db.models.signals import post_save
 
 # Machine Model
@@ -19,7 +20,7 @@ class RoboUser(models.Model):
   user = models.OneToOneField(User)
 
   # Roboclub RFID Card number
-  rfid = models.CharField(max_length=10, blank=True, default=0)
+  rfid = models.CharField(max_length=10, blank=True, null=True)
   
   # Roboclub Shop Access Permissions
   machines = models.ManyToManyField(Machine, blank=True, null=True)
@@ -85,8 +86,8 @@ class RoboUser(models.Model):
                                   choices=STATUS_CHOICES,
                                   default=GOOD)
   shop_status = models.CharField(max_length=2,
-                                  choices=STATUS_CHOICES,
-                                  default=GOOD)
+                                 choices=STATUS_CHOICES,
+                                 default=GOOD)
   def __unicode__(self):
     return self.user.username
 
