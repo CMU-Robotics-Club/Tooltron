@@ -74,7 +74,7 @@ int query_user_permission(int tool_id, unsigned int user_id) {
   if (handle == NULL)
     return 0;
 
-  sprintf(url, "http://%s/roboauth/%08x/%d/", server, user_id, tool_id);
+  sprintf(url, "http://%s/crm/roboauth/%08x/%d/", server, user_id, tool_id);
   error_code = curl_easy_setopt(handle, CURLOPT_URL, url);
   if (error_code) goto error;
 
@@ -123,6 +123,8 @@ int query_add_event(struct event_t *event) {
   char buf[1024];
   struct tm *timeinfo;
   long response = 0;
+
+  return 0;
 
 #ifdef DEBUG_EVENT_RESPONSE
   FILE *fdebug;
@@ -174,8 +176,8 @@ int query_add_event(struct event_t *event) {
       CURLFORM_COPYCONTENTS, event->succ? "1" : "0",
       CURLFORM_END);
 
-  sprintf(buf, "https://%s/add_card_event/", server);
-  //sprintf(buf, "http://%s/add_card_event/", server);
+  sprintf(buf, "https://%s/crm/add_card_event/", server);
+  //sprintf(buf, "http://%s/crm/add_card_event/", server);
   error_code = curl_easy_setopt(handle, CURLOPT_URL, buf);
   if (error_code) goto error;
 

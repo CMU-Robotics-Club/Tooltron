@@ -33,14 +33,14 @@ void print_usage(const char *name) {
   printf("       -d specifies the serial port for Modbus\n");
   printf("          defaults to /dev/ttyUSB0\n");
   printf("       -s specifies the server where the CRM is running\n");
-  printf("          defaults to minecraft.roboclub.org:8000\n");
+  printf("          defaults to roboticsclub.org\n");
 }
 
 int main(int argc, char **argv) {
   int i, opt;
   struct sigaction sigact;
   const char *device = "/dev/ttyUSB0";
-  const char *server = "minecraft.roboclub.org:8000";
+  const char *server = "roboticsclub.org";
 
   while ((opt = getopt(argc, argv, "hd:s:")) != -1) {
     switch (opt) {
