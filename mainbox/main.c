@@ -1,5 +1,6 @@
 #include "tool.h"
 #include "query.h"
+#include "log.h"
 #include <unistd.h>
 #include <signal.h>
 #include <strings.h>
@@ -59,8 +60,8 @@ int main(int argc, char **argv) {
     }
   }
 
-  printf("Serial device: %s\n", device);
-  printf("CRM server: http://%s/\n", server);
+  log_print("Serial device: %s", device);
+  log_print("CRM server: http://%s/", server);
 
   bzero(&sigact, sizeof(sigact));
   sigact.sa_handler = sigint;
@@ -76,7 +77,7 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  printf("Modbus initialized; polling tools...\n");
+  log_print("Modbus initialized; polling tools...");
 
   i = 0;
   while (run) {
@@ -86,14 +87,14 @@ int main(int argc, char **argv) {
     i = (i+1) % N_TOOLS;
   }
 
-  printf("\nDisabling tools\n");
+  log_print("Disabling tools");
   for (i = 0; i < N_TOOLS; i++) {
     tool_request_disable(&tools[i]);
   }
 
-  printf("Closing modbus connection\n");
+  log_print("Closing modbus connection");
   tool_close_mb();
 
-  printf("Exiting\n");
+  log_print("Exiting");
   return 0;
 }

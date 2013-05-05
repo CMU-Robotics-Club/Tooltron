@@ -1,4 +1,5 @@
 #include "util.h"
+#include "log.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -12,7 +13,7 @@ char *read_file(const char *filename) {
   
   fd = open(filename, O_RDONLY);
   if (fd < 0) {
-    perror("open");
+    log_perror("open");
     return NULL;
   }
 
@@ -38,7 +39,7 @@ char *read_file(const char *filename) {
       close(fd);
       return str;
     } else if (nread < 0) {
-      perror("read");
+      log_perror("read");
       free(str);
       close(fd);
       return NULL;

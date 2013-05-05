@@ -1,6 +1,7 @@
 #include "tool.h"
 #include "query.h"
 #include "event.h"
+#include "log.h"
 #include "tooltron_mb.h"
 #include <modbus.h>
 #include <stdio.h>
@@ -13,18 +14,19 @@ int tool_init_mb(const char *device) {
 
   ctx = modbus_new_rtu(device, MB_BAUD, 'N', 8, 1);
   if (ctx == NULL) {
-    fprintf(stderr, "modbus_new_rtu: %s\n", modbus_strerror(errno));
+    log_print("ERROR: modbus_new_rtu: %s", modbus_strerror(errno));
     return 1;
   }
 
   if (modbus_connect(ctx) == -1) {
-    fprintf(stderr, "modbus_connect: %s\n", modbus_strerror(errno));
+    log_print("ERROR: modbus_connect: %s", modbus_strerror(errno));
     modbus_free(ctx);
     return 1;
   }
 
   modbus_get_response_timeout(ctx, &timeout);
-  printf("Response timeout is %lus %luus\n", timeout.tv_sec, timeout.tv_usec);
+  log_print("Modbus response timeout is %lus %luus",
+      timeout.tv_sec, timeout.tv_usec);
 
   return 0;
 }
@@ -36,7 +38,7 @@ void tool_close_mb() {
 
 static void tool_write_coil(int addr, int bit) {
   if (modbus_write_bit(ctx, addr, bit) == -1) {
-    fprintf(stderr, "modbus_write_bit: %s\n", modbus_strerror(errno));
+    log_print("ERROR: modbus_write_bit: %s", modbus_strerror(errno));
   }
 }
 
@@ -49,7 +51,7 @@ static void tool_init(struct tool_t *tool) {
 static void tool_read_user(struct tool_t *tool) {
   unsigned short serno[2];
   if (modbus_read_input_registers(ctx, MB_INP_SERNOL, 2, serno) == -1) {
-    fprintf(stderr, "modbus_read_registers: %s\n", modbus_strerror(errno));
+    log_print("ERROR: modbus_read_registers: %s", modbus_strerror(errno));
     tool->user = 0;
   } else {
     tool->user = MODBUS_GET_INT32_FROM_INT16(serno, 0);
@@ -58,7 +60,7 @@ static void tool_read_user(struct tool_t *tool) {
 
 static void tool_grant_access(struct tool_t *tool) {
 
-  printf("Granting access to %08x on %s (%d)\n", tool->user, tool->name,
+  log_print("Granting access to %08x on %s (%d)", tool->user, tool->name,
       tool->address);
 
   tool_write_coil(MB_COIL_EN, 1);
@@ -74,7 +76,7 @@ static void tool_grant_access(struct tool_t *tool) {
 static void tool_deny_access(struct tool_t *tool) {
   struct event_t *event;
 
-  printf("Denying access to %08x on %s (%d)\n", tool->user, tool->name,
+  log_print("Denying access to %08x on %s (%d)", tool->user, tool->name,
       tool->address);
 
   tool_write_coil(MB_COIL_EN, 0);
@@ -97,7 +99,7 @@ static void tool_off(struct tool_t *tool) {
 }
 
 void tool_request_disable(struct tool_t *tool) {
-  printf("Requesting disable on %s (%d)\n", tool->name, tool->address);
+  log_print("Requesting disable on %s (%d)", tool->name, tool->address);
   tool_write_coil(MB_COIL_REQ_DIS, 1);
   tool->state = TS_REQ_DIS;
 }
@@ -106,26 +108,26 @@ void tool_poll(struct tool_t *tool) {
   unsigned char status[N_COILS];
 
   if (modbus_set_slave(ctx, tool->address) == -1) {
-    fprintf(stderr, "modbus_set_slave: %s\n", modbus_strerror(errno));
+    log_print("ERROR: modbus_set_slave: %s", modbus_strerror(errno));
   }
 
   /* If we can't read from the tool, we only want this error message to print
    * once, thus tool->connected */
   if (modbus_read_bits(ctx, 0, N_COILS, status) == -1) {
     if (tool->connected) {
-      fprintf(stderr, "Cannot connect to %s (%d): %s\n", tool->name,
+      log_print("Cannot connect to %s (%d): %s", tool->name,
           tool->address, modbus_strerror(errno));
       tool->connected = 0;
     }
     return;
   } else if (!tool->connected) {
-    fprintf(stderr, "Reconnected to %s (%d)\n", tool->name, tool->address);
+    log_print("Reconnected to %s (%d)", tool->name, tool->address);
     tool->connected = 1;
   }
 
   /*uint16_t current;
   if (modbus_read_input_registers(ctx, MB_INP_CURRENT, 1, &current) == -1) {
-    fprintf(stderr, "modbus_read_registers: %s\n", modbus_strerror(errno));
+    log_print("ERROR: modbus_read_registers: %s", modbus_strerror(errno));
   } else {
     printf("Current: %d\n", current);
   }*/
@@ -156,14 +158,14 @@ void tool_poll(struct tool_t *tool) {
 
     case TS_ON:
       if (!status[MB_COIL_EN]) {
-        printf("Tool %s (%d) is off\n", tool->name, tool->address);
+        log_print("Tool %s (%d) is off", tool->name, tool->address);
         tool_off(tool);
       }
       break;
 
     case TS_REQ_DIS:
       if (!status[MB_COIL_EN]) {
-        printf("Tool %s (%d) is off after requested disable\n", tool->name,
+        log_print("Tool %s (%d) is off after requested disable", tool->name,
             tool->address);
         tool_off(tool);
       }

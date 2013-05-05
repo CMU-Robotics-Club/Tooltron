@@ -1,6 +1,7 @@
 #include "query.h"
 #include "event.h"
 #include "util.h"
+#include "log.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -20,7 +21,7 @@ int query_init(const char *server_name) {
 
   error_code = curl_global_init(CURL_GLOBAL_SSL);
   if (error_code) {
-    fprintf(stderr, "curl_global_init: %s\n", curl_easy_strerror(error_code));
+    log_print("ERROR: curl_global_init: %s\n", curl_easy_strerror(error_code));
     return error_code;
   }
 
@@ -90,16 +91,16 @@ int query_user_permission(int tool_id, unsigned int user_id) {
   error_code = curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &response);
   if (error_code) goto error;
   if (response >= 400)
-    fprintf(stderr, "Error %ld from %s\n", response, url);
+    log_print("ERROR: response %ld from %s", response, url);
   else if (response > 200)
-    fprintf(stderr, "Warning: response %ld from %s\n", response, url);
+    log_print("WARNING: response %ld from %s", response, url);
 
   curl_easy_cleanup(handle);
   return result;
 
 error:
-  fprintf(stderr, "curl: %s\n", curl_easy_strerror(error_code));
-  fprintf(stderr, "      when authenticating user %08x on tool %d\n",
+  log_print("ERROR: curl: %s", curl_easy_strerror(error_code));
+  log_print("ERROR:       when authenticating user %08x on tool %d",
       user_id, tool_id);
   curl_easy_cleanup(handle);
   return 0;
@@ -205,9 +206,9 @@ int query_add_event(struct event_t *event) {
   error_code = curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &response);
   if (error_code) goto error;
   if (response >= 400)
-    fprintf(stderr, "Error %ld from %s\n", response, buf);
+    log_print("ERROR: response %ld from %s", response, buf);
   else if (response > 200)
-    fprintf(stderr, "Warning: response %ld from %s\n", response, buf);
+    log_print("WARNING: response %ld from %s", response, buf);
 
   curl_easy_cleanup(handle);
   curl_formfree(formpost);
@@ -217,7 +218,7 @@ int query_add_event(struct event_t *event) {
   return response >= 300;
 
 error:
-  fprintf(stderr, "curl: %s\n", curl_easy_strerror(error_code));
+  log_print("ERROR: curl: %s", curl_easy_strerror(error_code));
   curl_easy_cleanup(handle);
   curl_formfree(formpost);
 #ifdef DEBUG_EVENT_RESPONSE
