@@ -10,6 +10,7 @@ urlpatterns = patterns('',
     # url(r'^$', 'crm.views.home', name='home'),
     # url(r'^crm/', include('crm.foo.urls')),
     url(r'^roboauth/(?P<rfid_tag>[0-9A-Fa-f]+)/(?P<mach_num>\d+)/', 'robocrm.views.roboauth'),
+    url(r'^roboauth/(?P<rfid_tag>[0-9A-Fa-f]+)/', 'robocrm.views.roboauthall'),
     url(r'^add_card_event/', 'robocrm.views.add_card_event'),
 
     # Uncomment the admin/doc line below to enable admin documentation:

@@ -19,6 +19,17 @@ def roboauth(request, rfid_tag, mach_num):
   else :
     return HttpResponse("0")
 
+def roboauthall(request, rfid_tag):
+  r = RoboUser.objects.filter(rfid=rfid_tag)
+  if r.count() > 0:
+    us = r[0]
+  else:
+    return HttpResponse("0")
+  auth = 0
+  for mach in us.machines.all():
+    auth |= 1 << int(mach.id)
+  return HttpResponse(str(auth))
+
 def add_card_event(request):
   if request.method != 'POST':
     raise Http404
