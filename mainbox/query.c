@@ -1,4 +1,5 @@
 #include "query.h"
+#include "cache.h"
 #include "event.h"
 #include "util.h"
 #include "log.h"
@@ -10,8 +11,15 @@
 /* Outputs the response to /add_card_event to debug.html */
 //#define DEBUG_EVENT_RESPONSE
 
-const char *server;
-char *tooltron_password;
+/* Size of buffer written to by write_buffer(). We are only reading integers
+ * back from the server, so we don't need much of the response and anything
+ * else can be ignored */
+#define WRITE_BUFFER_SIZE 30
+
+static const char *server;
+static char *tooltron_password;
+static char buffer[WRITE_BUFFER_SIZE];
+static int buffer_idx;
 
 int query_init(const char *server_name) {
   CURLcode error_code;
@@ -41,16 +49,20 @@ void query_cleanup() {
     free(tooltron_password);
 }
 
-static size_t write_bool(void *buffer, size_t size, size_t nmemb, void *userp) {
-  int *resultp = userp;
-  char *str = buffer;
+static size_t write_buffer(void *buf_in, size_t size, size_t nmemb, void *userp) {
+  size_t to_read;
 
-  if (size*nmemb > 0 && str[0] == '1')
-    *resultp = 1;
-  else
-    *resultp = 0;
+  to_read = nmemb;
 
-  return nmemb;
+  if (buffer_idx + to_read*size > WRITE_BUFFER_SIZE)
+    to_read = (WRITE_BUFFER_SIZE - buffer_idx)/size;
+
+  if (to_read > 0) {
+    memcpy(buffer+buffer_idx, buf_in, to_read*size);
+    buffer_idx += to_read*size;
+  }
+
+  return to_read;
 }
 
 static size_t write_ignore(void *buffer, size_t size, size_t nmemb,
@@ -59,12 +71,12 @@ static size_t write_ignore(void *buffer, size_t size, size_t nmemb,
 }
 
 /*
- * query_user_permission
+ * do_q_user_perm
  *
- * Makes an HTTP request to the CRM server to see if user_id has access to
- * tool_id. Returns 1 if the server replies with '1' or 0 otherwise.
+ * Makes an HTTP request to the CRM server to see what tools user_id has access
+ * to. Returns a bitmask, and returns 0 if there was a problem.
  */
-int query_user_permission(int tool_id, unsigned int user_id) {
+unsigned int do_q_user_perm(unsigned int user_id) {
   CURL* handle;
   CURLcode error_code;
   char url[1024];
@@ -75,14 +87,15 @@ int query_user_permission(int tool_id, unsigned int user_id) {
   if (handle == NULL)
     return 0;
 
-  sprintf(url, "http://%s/crm/roboauth/%08x/%d/", server, user_id, tool_id);
+  sprintf(url, "http://%s/crm/roboauth/%08x/", server, user_id);
   error_code = curl_easy_setopt(handle, CURLOPT_URL, url);
   if (error_code) goto error;
 
-  error_code = curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_bool);
+  buffer_idx = 0;
+  error_code = curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_buffer);
   if (error_code) goto error;
 
-  error_code = curl_easy_setopt(handle, CURLOPT_WRITEDATA, &result);
+  error_code = curl_easy_setopt(handle, CURLOPT_WRITEDATA, NULL);
   if (error_code) goto error;
 
   error_code = curl_easy_perform(handle);
@@ -95,15 +108,50 @@ int query_user_permission(int tool_id, unsigned int user_id) {
   else if (response > 200)
     log_print("WARNING: response %ld from %s", response, url);
 
+  result = atoi(buffer);
+  cache_update(user_id, result);
+
   curl_easy_cleanup(handle);
   return result;
 
 error:
   log_print("ERROR: curl: %s", curl_easy_strerror(error_code));
-  log_print("ERROR:       when authenticating user %08x on tool %d",
-      user_id, tool_id);
+  log_print("ERROR:       when authenticating user %08x", user_id);
   curl_easy_cleanup(handle);
   return 0;
+}
+
+void do_refresh(unsigned int key) {
+  do_q_user_perm(key);
+}
+
+/*
+ * query_refresh_cache
+ *
+ * Queries the CRM server to update every user permission entry in the cache.
+ */
+void query_refresh_cache() {
+  cache_foreach(do_refresh);
+}
+
+/*
+ * query_user_permission
+ *
+ * Checks whether user_id has permission for tool_id. First checks the cache,
+ * then if that fails, calls do_q_user_perm to make an HTTP request to the CRM
+ * server.
+ */
+int query_user_permission(int tool_id, unsigned int user_id) {
+  unsigned int result;
+
+  if (cache_lookup(user_id, &result))
+    log_print("Serving permissions for %08x from cache", user_id);
+  else {
+    log_print("Requesting permissions for %08x from server", user_id);
+    result = do_q_user_perm(user_id);
+  }
+
+  return (result >> tool_id) & 1;
 }
 
 /*
@@ -124,8 +172,6 @@ int query_add_event(struct event_t *event) {
   char buf[1024];
   struct tm *timeinfo;
   long response = 0;
-
-  return 0;
 
 #ifdef DEBUG_EVENT_RESPONSE
   FILE *fdebug;

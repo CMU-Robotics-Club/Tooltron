@@ -24,5 +24,5 @@ void log_print(const char *fmt, ...) {
 
 void log_perror(const char *s) {
   log_time();
-  perror(s);
+  printf("%s: %s\n", s, sys_errlist[errno]);
 }

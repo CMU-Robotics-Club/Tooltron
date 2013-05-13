@@ -1,8 +1,11 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-/* Reads in an entire file. Returns NULL on error, or a malloc'd pointer to a
- * string which should later be freed. */
+#include <unistd.h>
+
 char *read_file(const char *filename);
+int create_pid_file();
+pid_t read_pid_file();
+void remove_pid_file();
 
 #endif

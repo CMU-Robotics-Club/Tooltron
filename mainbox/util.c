@@ -2,11 +2,18 @@
 #include "log.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 
+/*
+ * read_file
+ *
+ * Reads in an entire file. Returns NULL on error, or a malloc'd pointer to a
+ * string which should later be freed.
+ */
 char *read_file(const char *filename) {
   int fd, len, size, nread;
   char *str;
@@ -45,4 +52,76 @@ char *read_file(const char *filename) {
       return NULL;
     }
   }
+}
+
+/*
+ * create_pid_file
+ *
+ * Creates /var/run/tooltron.pid containing the PID of the current process.
+ * Returns 0 if successful, or nonzero if there is an error or it already
+ * exists.
+ */
+int create_pid_file() {
+  int fd;
+  FILE *file;
+  
+  fd = open("/var/run/tooltron.pid", O_CREAT | O_EXCL | O_WRONLY, 0644);
+  if (fd < 0) {
+    if (errno == EEXIST)
+      fprintf(stderr, "ERROR: tooltron is already running, or the pidfile "
+          "/var/run/tooltron.pid is stale");
+    else
+      log_perror("open");
+    return 1;
+  }
+
+  file = fdopen(fd, "w");
+  if (!file) {
+    log_perror("fdopen");
+    return 1;
+  }
+
+  fprintf(file, "%d", getpid());
+
+  fclose(file);
+  return 0;
+}
+
+/*
+ * remove_pid_file
+ *
+ * Removes /var/run/tooltron.pid.
+ */
+void remove_pid_file() {
+  if (unlink("/var/run/tooltron.pid"))
+    log_perror("unlink");
+}
+
+/*
+ * read_pid_file
+ *
+ * Returns the integer found in /var/run/tooltron.pid, or 0 if there was an
+ * error.
+ */
+pid_t read_pid_file() {
+  FILE *file;
+  int pid;
+
+  file = fopen("/var/run/tooltron.pid", "r");
+  if (!file) {
+    if (errno == ENOENT)
+      fprintf(stderr, "ERROR: tooltron does not appear to be running\n");
+    else
+      perror("fopen");
+    return 0;
+  }
+
+  if (fscanf(file, "%d", &pid) != 1) {
+    perror("fscanf");
+    fclose(file);
+    return 0;
+  }
+
+  fclose(file);
+  return pid;
 }

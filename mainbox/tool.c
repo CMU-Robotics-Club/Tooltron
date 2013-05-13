@@ -99,9 +99,11 @@ static void tool_off(struct tool_t *tool) {
 }
 
 void tool_request_disable(struct tool_t *tool) {
-  log_print("Requesting disable on %s (%d)", tool->name, tool->address);
-  tool_write_coil(MB_COIL_REQ_DIS, 1);
-  tool->state = TS_REQ_DIS;
+  if (tool->state == TS_ON) {
+    log_print("Requesting disable on %s (%d)", tool->name, tool->address);
+    tool_write_coil(MB_COIL_REQ_DIS, 1);
+    tool->state = TS_REQ_DIS;
+  }
 }
 
 void tool_poll(struct tool_t *tool) {
