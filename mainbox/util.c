@@ -68,7 +68,7 @@ int create_pid_file() {
   if (fd < 0) {
     if (errno == EEXIST)
       fprintf(stderr, "ERROR: tooltron is already running, or the pidfile "
-          PIDFILE "is stale");
+          PIDFILE " is stale");
     else
       log_perror(PIDFILE);
     return 1;
