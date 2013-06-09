@@ -20,7 +20,7 @@ char *read_file(const char *filename) {
   
   fd = open(filename, O_RDONLY);
   if (fd < 0) {
-    log_perror("open");
+    log_perror(filename);
     return NULL;
   }
 
@@ -57,21 +57,20 @@ char *read_file(const char *filename) {
 /*
  * create_pid_file
  *
- * Creates /var/run/tooltron.pid containing the PID of the current process.
- * Returns 0 if successful, or nonzero if there is an error or it already
- * exists.
+ * Creates PIDFILE containing the PID of the current process.  Returns 0 if
+ * successful, or nonzero if there is an error or it already exists.
  */
 int create_pid_file() {
   int fd;
   FILE *file;
   
-  fd = open("/var/run/tooltron.pid", O_CREAT | O_EXCL | O_WRONLY, 0644);
+  fd = open(PIDFILE, O_CREAT | O_EXCL | O_WRONLY, 0644);
   if (fd < 0) {
     if (errno == EEXIST)
       fprintf(stderr, "ERROR: tooltron is already running, or the pidfile "
-          "/var/run/tooltron.pid is stale");
+          PIDFILE "is stale");
     else
-      log_perror("open");
+      log_perror(PIDFILE);
     return 1;
   }
 
@@ -90,29 +89,29 @@ int create_pid_file() {
 /*
  * remove_pid_file
  *
- * Removes /var/run/tooltron.pid.
+ * Removes PIDFILE.
  */
 void remove_pid_file() {
-  if (unlink("/var/run/tooltron.pid"))
-    log_perror("unlink");
+  if (unlink(PIDFILE))
+    log_perror(PIDFILE);
 }
 
 /*
  * read_pid_file
  *
- * Returns the integer found in /var/run/tooltron.pid, or 0 if there was an
+ * Returns the integer found in PIDFILE, or 0 if there was an
  * error.
  */
 pid_t read_pid_file() {
   FILE *file;
   int pid;
 
-  file = fopen("/var/run/tooltron.pid", "r");
+  file = fopen(PIDFILE, "r");
   if (!file) {
     if (errno == ENOENT)
       fprintf(stderr, "ERROR: tooltron does not appear to be running\n");
     else
-      perror("fopen");
+      perror(PIDFILE);
     return 0;
   }
 

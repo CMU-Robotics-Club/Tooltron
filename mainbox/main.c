@@ -98,6 +98,7 @@ int tooltron_main(const char *device, const char *server) {
     usleep(SLEEP_MS * (useconds_t)1000);
     i = (i+1) % N_TOOLS;
   }
+  log_print("Recieved SIGINT or SIGTERM, shutting down");
 
   log_print("Disabling tools");
   for (i = 0; i < N_TOOLS; i++) {
@@ -122,11 +123,12 @@ char *usage =
 "          defaults to roboticsclub.org\n"
 "       <cmd> can be any of the following:\n"
 "          run     runs tooltron if it is not already running\n"
-"          refresh signals an already running tooltron to refresh its cache\n"
-"          clear   signals an already running tooltron to clear its cache\n";
+"          stop    signals a running tooltron to shut down\n"
+"          refresh signals a running tooltron to refresh its cache\n"
+"          clear   signals a running tooltron to clear its cache\n";
 
 int main(int argc, char **argv) {
-  int opt;
+  int opt, status;
   const char *device = "/dev/ttyUSB0";
   const char *server = "roboticsclub.org";
 
@@ -156,20 +158,34 @@ int main(int argc, char **argv) {
   }
 
   if (strcmp(argv[optind], "refresh") == 0) {
+
     send_signal(SIGUSR1);
     return 0;
+
   } else if (strcmp(argv[optind], "clear") == 0) {
+
     send_signal(SIGUSR2);
     return 0;
-  } else if (strcmp(argv[optind], "run") != 0) {
-    /* <cmd> is not "refresh", "clear", or "run", error */
-    printf(usage, argv[0]);
-    return 1;
+
+  } else if (strcmp(argv[optind], "stop") == 0) {
+
+    send_signal(SIGTERM);
+    return 0;
+
+  } else if (strcmp(argv[optind], "run") == 0) {
+
+    if (create_pid_file())
+      /* pid file already exists, error */
+      return 1;
+
+    status = tooltron_main(device, server);
+
+    remove_pid_file();
+    return status;
+
   }
 
-  if (create_pid_file())
-    /* pid file already exists, error */
-    return 1;
-
-  return tooltron_main(device, server);
+  printf("Unknown command \"%s\"\n", argv[optind]);
+  printf(usage, argv[0]);
+  return 1;
 }
