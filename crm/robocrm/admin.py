@@ -1,4 +1,6 @@
+import string
 from robocrm.models import Machine, Event, Project, RoboResource
+from django.core.mail import send_mail
 from django.forms import ModelForm, ValidationError
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
@@ -25,6 +27,20 @@ class UserProfileInline(admin.StackedInline):
               'bench_status', 'shop_status')
           }),)
 
+def subscribe_to_list(first_name, last_name, email, listname):
+  if email == '':
+    return
+
+  name = string.strip(first_name + ' ' + last_name)
+  if name == '':
+    from_addr = email
+  else:
+    from_addr = '"' + name + '" <' + email + '>'
+
+  to_addr = listname + '-subscribe@lists.andrew.cmu.edu'
+
+  send_mail('', '', from_addr, [to_addr])
+
 class RoboUserCreationForm(ModelForm):
   # This is modelled directly after django.contrib.auth.forms.UserCreationForm 
 
@@ -45,6 +61,7 @@ class RoboUserCreationForm(ModelForm):
     user.set_password('geek6811')
     if commit:
       user.save()
+    subscribe_to_list(user.first_name, user.last_name, user.email, 'roboclub-gb')
     return user
 
 class RoboUserAdmin(UserAdmin):
