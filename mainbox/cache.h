@@ -2,6 +2,7 @@
 #define CACHE_H
 
 #define CACHE_SIZE 256
+#define CACHE_MAX_ENTRIES 160
 
 typedef void (*cache_func)(unsigned int key);
 

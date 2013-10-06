@@ -1,6 +1,7 @@
 #include "cache.h"
 #include "log.h"
 #include <stdlib.h>
+#include <time.h>
 
 struct entry_t {
   unsigned int key;
@@ -9,7 +10,32 @@ struct entry_t {
   struct entry_t *next;
 };
 
-struct entry_t *cache[CACHE_SIZE];
+static struct entry_t *cache[CACHE_SIZE];
+static int n_entries;
+
+static void cache_remove_lru() {
+  struct entry_t *entry, **ptr;
+  struct entry_t *lru, **lru_ptr;
+  int i;
+
+  lru = NULL;
+  for (i = 0; i < CACHE_SIZE; i++) {
+    ptr = &cache[i];
+    for (entry = cache[i]; entry; entry = entry->next) {
+      if (lru == NULL || entry->retrieved < lru->retrieved) {
+        lru = entry;
+        lru_ptr = ptr;
+      }
+      ptr = &entry->next;
+    }
+  }
+
+  if (lru != NULL) {
+    *lru_ptr = lru->next;
+    free(lru);
+    n_entries--;
+  }
+}
 
 void cache_foreach(cache_func f) {
   struct entry_t *entry;
@@ -32,14 +58,18 @@ void cache_clear() {
     }
     cache[i] = NULL;
   }
+
+  n_entries = 0;
 }
 
 struct entry_t *cache_find(unsigned int key) {
   struct entry_t *entry;
 
   for (entry = cache[key % CACHE_SIZE]; entry; entry = entry->next) {
-    if (entry->key == key)
+    if (entry->key == key) {
+      entry->retrieved = time(NULL);
       return entry;
+    }
   }
 
   return NULL;
@@ -51,10 +81,14 @@ void cache_add(unsigned int key, unsigned int value) {
 
   entry = malloc(sizeof(struct entry_t));
   if (!entry) {
-    log_print("ERROR: Out of memory; clearing cache");
-    cache_clear();
+    log_print("ERROR: Out of memory");
     return;
   }
+
+  if (n_entries == CACHE_MAX_ENTRIES) {
+    cache_remove_lru();
+  }
+  n_entries++;
 
   i = key % CACHE_SIZE;
   entry->key = key;
