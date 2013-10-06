@@ -23,7 +23,6 @@ static int buffer_idx;
 
 int query_init(const char *server_name) {
   CURLcode error_code;
-  int len;
 
   server = server_name;
 

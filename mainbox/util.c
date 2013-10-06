@@ -28,9 +28,7 @@ char *read_file(const char *filename) {
     return NULL;
   }
 
-  fgets(buf, BUF_SIZE, file);
-
-  if (ferror(file)) {
+  if (fgets(buf, BUF_SIZE, file) == NULL && ferror(file)) {
     log_perror(filename);
     fclose(file);
     return NULL;
