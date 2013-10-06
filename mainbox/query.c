@@ -34,11 +34,8 @@ int query_init(const char *server_name) {
   }
 
   tooltron_password = read_file("tooltron_password");
-  if (!tooltron_password)
+  if (tooltron_password == NULL)
     return 1;
-  len = strlen(tooltron_password);
-  while (len > 0 && tooltron_password[len-1] == '\n')
-    tooltron_password[--len] = '\0';
 
   return 0;
 }
