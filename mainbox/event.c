@@ -25,7 +25,11 @@ void event_q_process() {
   struct event_t *old;
   if (head && query_add_event(head) == 0) {
     old = head;
-    head = head->next;
+    if (head == tail) {
+      head = NULL;
+      tail = NULL;
+    } else
+      head = head->next;
     event_free(old);
   }
 }
