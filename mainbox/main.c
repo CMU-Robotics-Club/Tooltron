@@ -128,7 +128,7 @@ char *usage =
 "          clear   signals a running tooltron to clear its cache\n";
 
 int main(int argc, char **argv) {
-  int opt, status;
+  int opt, status, as_root;
   const char *device = "/dev/ttyUSB0";
   const char *server = "roboticsclub.org";
 
@@ -174,13 +174,21 @@ int main(int argc, char **argv) {
 
   } else if (strcmp(argv[optind], "run") == 0) {
 
-    if (create_pid_file())
-      /* pid file already exists, error */
-      return 1;
+    /* if we're not root, don't bother with the pid file */
+    if (geteuid() == 0) {
+      as_root = 1;
+      if (create_pid_file())
+        /* pid file already exists, error */
+        return 1;
+    } else {
+      as_root = 0;
+      log_print("Warning: not root. Running without a PID file");
+    }
 
     status = tooltron_main(device, server);
 
-    remove_pid_file();
+    if (as_root)
+      remove_pid_file();
     return status;
 
   }
