@@ -4,10 +4,13 @@
 #include "rfid.h"
 #include "serial.h"
 
-static uint8_t seek_cmd[] = {0xFF, 0x00, 0x01, 0x82, 0x83};
+#define MF_SELECT_CMD 0x83
+
+static uint8_t select_cmd[] = {0xFF, 0, 1, MF_SELECT_CMD, MF_SELECT_CMD + 1};
 
 #define FRAME_SIZE(data_size) ((data_size)+4)
-#define MAX_FRAME_SIZE FRAME_SIZE(RFID_SERNO_SIZE+2)
+#define RFID_DATA_SIZE (RFID_SERNO_SIZE+2)
+#define MAX_FRAME_SIZE FRAME_SIZE(RFID_DATA_SIZE)
 
 #define RESP_START    0
 #define RESP_RESERVED 1
@@ -33,17 +36,23 @@ void rfid_init() {
 void rfid_start_read() {
   resp_idx = 0;
   serial_flush();
-  serial_write(seek_cmd, sizeof(seek_cmd));
+  serial_write(select_cmd, sizeof(select_cmd));
 }
 
 char parse_response() {
   uint8_t sum;
   int resp_csum, i;
 
-  if (response[RESP_LENGTH] != RFID_SERNO_SIZE+2
-      || response[RESP_CMD] != 0x82) {
+  if (response[RESP_CMD] != MF_SELECT_CMD) {
+    // invalid response, ignore
     zero_serno();
     return 0;
+  }
+
+  if (response[RESP_LENGTH] != RFID_DATA_SIZE) {
+    // wrong response length, assume there's no card
+    zero_serno();
+    return 1;
   }
 
   resp_csum = response[RESP_LENGTH] + RESP_CMD;
@@ -52,7 +61,8 @@ char parse_response() {
     sum += response[i];
   }
   if (response[resp_csum] != sum) {
-    //return 0; TODO
+    zero_serno();
+    return 0;
   }
 
   memcpy(serno, &response[RESP_DATA+1], RFID_SERNO_SIZE);
@@ -80,8 +90,7 @@ char rfid_poll() {
 
       // check if we're done with current packet
       if (resp_idx >= FRAME_SIZE(response[RESP_LENGTH])) {
-        resp_idx = 0;
-        serial_write(seek_cmd, sizeof(seek_cmd));
+        rfid_start_read();
         if (parse_response()) {
           return 1;
         }
