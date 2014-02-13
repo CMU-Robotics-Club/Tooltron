@@ -1,7 +1,7 @@
 #ifndef SERIAL_H
 #define SERIAL_H
 
-#define BAUD_RATE 9600
+#define BAUD_RATE 19200
 
 #define RX_BUFFER_SIZE 64
 

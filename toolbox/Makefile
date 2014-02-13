@@ -32,7 +32,10 @@ toolbox.elf: $(SRC) $(HDR)
 	avr-gcc -S $(FLAGS) $< -o $@
 
 program: toolbox.hex
-	avrdude -p $(PART) -c $(PROG) -P usb -B 3 -F -U flash:w:toolbox.hex
+	avrdude -p $(PART) -c $(PROG) -P usb -B 3 -U flash:w:toolbox.hex
+
+readfuse:
+	avrdude -p $(PART) -c $(PROG) -P usb -B 3 -U lfuse:r:-:b -U hfuse:r:-:b -U efuse:r:-:b -U lock:r:-:b
 
 clean:
 	rm -f *.elf *.hex
