@@ -257,6 +257,7 @@ int query_add_event(struct event_t *event) {
 #ifdef DEBUG_EVENT_RESPONSE
   fclose(fdebug);
 #endif
+  // return error if it's not a 200-level response
   return response >= 300;
 
 error:
