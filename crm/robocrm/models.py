@@ -96,7 +96,7 @@ class Event(models.Model):
   type = models.CharField(max_length=30)
   tstart = models.DateTimeField()
   tend = models.DateTimeField()
-  user = models.ForeignKey('RoboUser')
+  user = models.ForeignKey('RoboUser', null=True)
   succ = models.BooleanField(default=False)
   imgurl = models.URLField()
   machine = models.ForeignKey('Machine')
@@ -104,7 +104,8 @@ class Event(models.Model):
   matuse = models.TextField()
   
   def __unicode__(self):
-    return u'%s %s %s'%(self.type, self.user.user.username, self.succ)
+    return u'%s %s %s'%(self.type, 
+      self.user.user.username if self.user else 'unknown', self.succ)
 
 # Project Model
 class Project(models.Model):

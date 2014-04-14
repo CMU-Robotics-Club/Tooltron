@@ -1,6 +1,6 @@
 # Create your views here.
 from django.http import HttpResponse, Http404
-from django.core.exceptions import PermissionDenied, DoesNotExist
+from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.contrib.auth import authenticate, login
 from robocrm.models import *
 
@@ -52,13 +52,10 @@ def add_card_event(request):
 
   try:
     robouser = RoboUser.objects.get(rfid__iexact=user_id)
-  except DoesNotExist:
+  except ObjectDoesNotExist:
     robouser = None
 
-  try:
-    machine = Machine.objects.get(id__exact=machine_id)
-  except DoesNotExist:
-    machine = None
+  machine = Machine.objects.get(id__exact=machine_id)
 
   ev = Event(type='card',
       tstart=tstart,
