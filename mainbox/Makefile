@@ -10,7 +10,7 @@ tooltron: $(SRC) $(HDR)
 
 install: tooltron
 	cp tooltron /usr/local/bin
-	cp tooltron.init /usr/init.d/tooltron
+	cp tooltron.init /etc/init.d/tooltron
 	update-rc.d tooltron defaults
 
 clean:

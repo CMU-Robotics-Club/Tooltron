@@ -20,6 +20,7 @@ void log_print(const char *fmt, ...) {
   vprintf(fmt, args);
   printf("\n");
   va_end(args);
+  fflush(stdout);
 }
 
 void log_perror(const char *s) {
