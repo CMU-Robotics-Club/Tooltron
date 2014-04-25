@@ -24,6 +24,10 @@ int tool_init_mb(const char *device) {
     return 1;
   }
 
+  timeout.tv_sec = 0;
+  timeout.tv_usec = MB_TIMEOUT_MS * 1000;
+  modbus_set_response_timeout(ctx, &timeout);
+
   modbus_get_response_timeout(ctx, &timeout);
   log_print("Modbus response timeout is %lus %luus",
       timeout.tv_sec, timeout.tv_usec);

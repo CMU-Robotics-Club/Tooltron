@@ -7,8 +7,7 @@
 #include <signal.h>
 #include <string.h>
 #include <stdio.h>
-
-#define SLEEP_MS 25
+#include <sys/time.h>
 
 static struct tool_t tools[] = {
   TOOL_DECL("Mill", 1),
@@ -52,7 +51,8 @@ void send_signal(int sig) {
 
 int tooltron_main(const char *device, const char *server) {
   struct sigaction sigact;
-  int i;
+  struct timeval time_prev, time_cur;
+  int i, diff;
 
   log_print("Serial device: %s", device);
   log_print("CRM server: http://%s/", server);
@@ -81,6 +81,8 @@ int tooltron_main(const char *device, const char *server) {
 
   log_print("Modbus initialized; polling tools...");
 
+  gettimeofday(&time_prev, NULL);
+
   i = 0;
   while (run) {
     tool_poll(&tools[i]);
@@ -95,7 +97,17 @@ int tooltron_main(const char *device, const char *server) {
       cache_clear();
       clear_cache = 0;
     }
-    usleep(SLEEP_MS * (useconds_t)1000);
+
+    // slow loop period down to MB_TIMEOUT_MS
+    gettimeofday(&time_cur, NULL);
+    diff = (time_cur.tv_sec - time_prev.tv_sec) * 1000000
+         + (time_cur.tv_usec - time_prev.tv_usec);
+    diff = MB_TIMEOUT_MS * 1000 - diff;
+    if (diff > 0) {
+      usleep(diff);
+    }
+    gettimeofday(&time_prev, NULL);
+
     i = (i+1) % N_TOOLS;
   }
   log_print("Recieved SIGINT or SIGTERM, shutting down");
