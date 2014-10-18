@@ -2,6 +2,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include "time.h"
+#include "current.h"
 
 /* F_CPU / PRESCALE = OCR * 1000 + ERROR */
 #define OCR (F_CPU / PRESCALE / 1000UL)
@@ -22,6 +23,9 @@ ISR(TIMER0_COMPA_vect) {
   if (++ms == TICK_MS) {
     ready = 1;
     ms = 0;
+  }
+  if (ms % 2 == 0) {
+    current_start_adc(); // TODO don't do this here
   }
 }
 

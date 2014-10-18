@@ -3,9 +3,11 @@
 #include <avr/interrupt.h>
 #include <math.h>
 
+// TODO the ADC is run once every 2ms no matter what these numbers
+// say. They're not used. Actual samples/cycle is around 8.3
 #define CYCLES_PER_SECOND 60 // wall power
-#define SAMPLES_PER_CYCLE 16
-#define N_SAMPLES 48
+#define SAMPLES_PER_CYCLE  8
+#define N_SAMPLES 24
 
 unsigned int samples[N_SAMPLES];
 int sample_idx;
@@ -18,17 +20,6 @@ void current_init() {
   /* TODO reduce power consumption with DIDR* */
 
   /*
-   * COM1A = COM1B = 0, disconnect pins
-   * WGM1 = 4, clear timer on compare A
-   * CS1 = 1, no prescaler
-   */
-  TCCR1B = _BV(WGM12) | _BV(CS10);
-
-  /* Timer is cleared on A, ADC is triggered on B */
-  OCR1A = F_CPU / SAMPLES_PER_CYCLE / CYCLES_PER_SECOND;
-  OCR1B = OCR1A;
-
-  /*
    * REFS = 0, Vcc reference (set to 2 for internal 1.1V reference)
    * MUX = 8, PB3(ADC8)
    */
@@ -36,26 +27,25 @@ void current_init() {
 
   /*
    * ADLAR = 0, right adjust result
-   * ADTS = 5, start on timer 1 compare match B
    */
-  ADCSRB = _BV(ADTS2) | _BV(ADTS0);
+  ADCSRB = 0;
 
   /*
    * ADEN = 1, enable
    * ADSC = 0, don't start yet
-   * ADATE = 1, auto trigger
+   * ADATE = 0, no auto trigger
    * ADIE = 1, enable interrupt
    * ADPS = 6, prescale clock by 64
    */
-  ADCSRA = _BV(ADEN) | _BV(ADATE) | _BV(ADIE) | _BV(ADPS2) | _BV(ADPS1);
+  ADCSRA = _BV(ADEN) | _BV(ADIE) | _BV(ADPS2) | _BV(ADPS1);
+}
+
+void current_start_adc() {
+  ADCSRA |= _BV(ADSC);
 }
 
 ISR(ADC_vect) {
   unsigned int old, new;
-
-  /* clear the timer interrupt flag so that the ADC will be triggered again
-   * next time the timer resets */
-  TIFR |= _BV(OCF1B);
 
   new = ADC;
 

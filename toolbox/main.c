@@ -21,7 +21,8 @@ enum toolstate_t {
   TS_DENY,
   TS_REQ_DIS,
   TS_MISSING_ID,
-  TS_ON
+  TS_ON,
+  TS_OVER_CURRENT
 };
 
 static enum toolstate_t toolstate = TS_INIT;
@@ -30,6 +31,12 @@ static uint8_t latest_reading[RFID_SERNO_SIZE];
 static uint8_t current_user[RFID_SERNO_SIZE];
 static uint16_t current;
 //static uint16_t current_max_warn, current_max_hard;
+
+// watch for current spike when tool turns on
+#define CURRENT_STARTUP_THRESH   10
+#define CURRENT_STARTUP_TIMEOUT 200 // ms
+static uint8_t current_startup_timeout;
+static uint16_t current_startup_value;
 
 static inline void set_coil(char coil, char bit) {
   coils = (coils & ~(1 << coil)) | (bit << coil);
@@ -92,6 +99,8 @@ static void tool_tick() {
       if (get_coil(MB_COIL_EN)) {
         tool_enable();
         toolstate = TS_ON;
+        current_startup_timeout = CURRENT_STARTUP_TIMEOUT / TICK_MS;
+        current_startup_value = current + CURRENT_STARTUP_THRESH;
       } else if (!get_coil(MB_COIL_NEW)) {
         toolstate = TS_DENY;
       } else if (!serno_equal(current_user, latest_reading)) {
@@ -125,7 +134,12 @@ static void tool_tick() {
       break;
 
     case TS_MISSING_ID:
-      if (!get_coil(MB_COIL_EN)) {
+      if (current_startup_timeout > 0 && current > current_startup_value) {
+        tool_disable();
+        set_coil(MB_COIL_EN, 0);
+        toolstate = TS_OVER_CURRENT;
+        led_blink_start(500, 16, RED);
+      } else if (!get_coil(MB_COIL_EN)) {
         tool_disable();
         toolstate = TS_OFF;
       } else if (get_coil(MB_COIL_REQ_DIS)) {
@@ -138,11 +152,19 @@ static void tool_tick() {
         serno_zero(current_user);
         toolstate = TS_OFF;
       }
+      if (current_startup_timeout > 0) {
+        current_startup_timeout--;
+      }
       break;
 
     case TS_ON:
       led_green();
-      if (!get_coil(MB_COIL_EN)) {
+      if (current_startup_timeout > 0 && current > current_startup_value) {
+        tool_disable();
+        set_coil(MB_COIL_EN, 0);
+        toolstate = TS_OVER_CURRENT;
+        led_blink_start(500, 16, RED);
+      } else if (!get_coil(MB_COIL_EN)) {
         tool_disable();
         serno_zero(current_user);
         toolstate = TS_OFF;
@@ -150,7 +172,17 @@ static void tool_tick() {
         toolstate = TS_REQ_DIS;
       } else if (!serno_equal(current_user, latest_reading)) {
         toolstate = TS_MISSING_ID;
-        led_blink_start(500, 6, YELLOW); // TODO made 10 seconds
+        led_blink_start(500, 16, YELLOW);
+      }
+      if (current_startup_timeout > 0) {
+        current_startup_timeout--;
+      }
+      break;
+
+    case TS_OVER_CURRENT:
+      if (led_blink_done() && !serno_equal(current_user, latest_reading)) {
+        toolstate = TS_OFF;
+        serno_zero(current_user);
       }
       break;
 
