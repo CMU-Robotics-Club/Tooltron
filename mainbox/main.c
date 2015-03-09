@@ -1,6 +1,5 @@
 #include "tool.h"
 #include "query.h"
-#include "cache.h"
 #include "log.h"
 #include "util.h"
 #include <unistd.h>
@@ -25,19 +24,9 @@ static struct tool_t tools[] = {
 #define N_TOOLS (sizeof(tools)/sizeof(struct tool_t))
 
 volatile int run = 1;
-volatile int refresh_cache = 0;
-volatile int clear_cache = 0;
 
 void sigint(int sig) {
   run = 0;
-}
-
-void sigusr1(int sig) {
-  refresh_cache = 1;
-}
-
-void sigusr2(int sig) {
-  clear_cache = 1;
 }
 
 void send_signal(int sig) {
@@ -65,12 +54,6 @@ int tooltron_main(const char *device, const char *server) {
   sigaction(SIGINT, &sigact, NULL);
   sigaction(SIGTERM, &sigact, NULL);
 
-  sigact.sa_handler = sigusr1;
-  sigaction(SIGUSR1, &sigact, NULL);
-
-  sigact.sa_handler = sigusr2;
-  sigaction(SIGUSR2, &sigact, NULL);
-
   if (query_init(server)) {
     return 1;
   }
@@ -87,16 +70,6 @@ int tooltron_main(const char *device, const char *server) {
   while (run) {
     tool_poll(&tools[i]);
     event_q_process();
-    if (refresh_cache) {
-      log_print("Recieved SIGUSR1, refreshing cache content");
-      query_refresh_cache();
-      refresh_cache = 0;
-    }
-    if (clear_cache) {
-      log_print("Recieved SIGUSR2, clearing cache");
-      cache_clear();
-      clear_cache = 0;
-    }
 
     // slow loop period down to MB_TIMEOUT_MS
     gettimeofday(&time_cur, NULL);
@@ -122,7 +95,6 @@ int tooltron_main(const char *device, const char *server) {
 
   log_print("Exiting");
   query_cleanup();
-  cache_clear();
   return 0;
 }
 
@@ -135,9 +107,7 @@ char *usage =
 "          defaults to roboticsclub.org\n"
 "       <cmd> can be any of the following:\n"
 "          run     runs tooltron if it is not already running\n"
-"          stop    signals a running tooltron to shut down\n"
-"          refresh signals a running tooltron to refresh its cache\n"
-"          clear   signals a running tooltron to clear its cache\n";
+"          stop    signals a running tooltron to shut down\n";
 
 int main(int argc, char **argv) {
   int opt, status, as_root;

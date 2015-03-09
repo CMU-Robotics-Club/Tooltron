@@ -4,6 +4,7 @@
 #include <time.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <string.h>
 
 void log_time() {
   char buf[100];
@@ -25,5 +26,5 @@ void log_print(const char *fmt, ...) {
 
 void log_perror(const char *s) {
   log_time();
-  printf("%s: %s\n", s, sys_errlist[errno]);
+  printf("%s: %s\n", s, strerror(errno));
 }

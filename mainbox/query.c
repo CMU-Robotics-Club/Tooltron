@@ -1,5 +1,4 @@
 #include "query.h"
-#include "cache.h"
 #include "event.h"
 #include "util.h"
 #include "log.h"
@@ -105,7 +104,6 @@ unsigned int do_q_user_perm(unsigned int user_id) {
     log_print("WARNING: response %ld from %s", response, url);
 
   result = atoi(buffer);
-  cache_update(user_id, result);
 
   curl_easy_cleanup(handle);
   return result;
@@ -117,35 +115,18 @@ error:
   return 0;
 }
 
-void do_refresh(unsigned int key) {
-  do_q_user_perm(key);
-}
-
-/*
- * query_refresh_cache
- *
- * Queries the CRM server to update every user permission entry in the cache.
- */
-void query_refresh_cache() {
-  cache_foreach(do_refresh);
-}
-
 /*
  * query_user_permission
  *
- * Checks whether user_id has permission for tool_id. First checks the cache,
- * then if that fails, calls do_q_user_perm to make an HTTP request to the CRM
+ * Checks whether user_id has permission for tool_id.
+ * Calls do_q_user_perm to make an HTTP request to the CRM
  * server.
  */
 int query_user_permission(int tool_id, unsigned int user_id) {
   unsigned int result;
 
-  if (cache_lookup(user_id, &result))
-    log_print("Serving permissions for %08x from cache", user_id);
-  else {
-    log_print("Requesting permissions for %08x from server", user_id);
-    result = do_q_user_perm(user_id);
-  }
+  log_print("Requesting permissions for %08x from server", user_id);
+  result = do_q_user_perm(user_id);
 
   return (result >> tool_id) & 1;
 }
