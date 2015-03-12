@@ -17,7 +17,7 @@
 
 static const char *server;
 static char *tooltron_password;
-static char buffer[WRITE_BUFFER_SIZE];
+static char buffer[WRITE_BUFFER_SIZE+1]; // +1 for null byte
 static int buffer_idx;
 
 int query_init(const char *server_name) {
@@ -54,6 +54,7 @@ static size_t write_buffer(void *buf_in, size_t size, size_t nmemb, void *userp)
 
   if (to_read > 0) {
     memcpy(buffer+buffer_idx, buf_in, to_read*size);
+    buffer[buffer_idx + to_read*size] = '\0';
     buffer_idx += to_read*size;
   }
 
@@ -66,12 +67,15 @@ static size_t write_ignore(void *buffer, size_t size, size_t nmemb,
 }
 
 /*
- * do_q_user_perm
+ * query_user_permission
  *
- * Makes an HTTP request to the CRM server to see what tools user_id has access
- * to. Returns a bitmask, and returns 0 if there was a problem.
+ * Checks whether user_id has permission for tool_id.
+ * Makes an HTTP request to the CRM server to see if user_id
+ * has access to the tool. Returns 0 if there was a problem. 
  */
-unsigned int do_q_user_perm(unsigned int user_id) {
+int query_user_permission(int tool_id, unsigned int user_id) {
+  log_print("Requesting permissions for %08x from server", user_id);
+  
   CURL* handle;
   CURLcode error_code;
   char url[1024];
@@ -82,7 +86,7 @@ unsigned int do_q_user_perm(unsigned int user_id) {
   if (handle == NULL)
     return 0;
 
-  sprintf(url, "http://%s/crm/roboauth/%08x/", server, user_id);
+  sprintf(url, "https://%s/crm/roboauth/%08x/%08x/", server, user_id, tool_id);
   error_code = curl_easy_setopt(handle, CURLOPT_URL, url);
   if (error_code) goto error;
 
@@ -113,22 +117,6 @@ error:
   log_print("ERROR:       when authenticating user %08x", user_id);
   curl_easy_cleanup(handle);
   return 0;
-}
-
-/*
- * query_user_permission
- *
- * Checks whether user_id has permission for tool_id.
- * Calls do_q_user_perm to make an HTTP request to the CRM
- * server.
- */
-int query_user_permission(int tool_id, unsigned int user_id) {
-  unsigned int result;
-
-  log_print("Requesting permissions for %08x from server", user_id);
-  result = do_q_user_perm(user_id);
-
-  return (result >> tool_id) & 1;
 }
 
 /*

@@ -27,6 +27,6 @@ void tool_poll(struct tool_t *tool);
 /* Should be less than 1000 (see modbus_set_response_timeout()). Should also be
  * high enough to ensure that connected tools will respond. Tools poll their own
  * modbus code about every 50ms. */
-#define MB_TIMEOUT_MS 70
+#define MB_TIMEOUT_MS 150
 
 #endif

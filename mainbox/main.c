@@ -9,16 +9,12 @@
 #include <sys/time.h>
 
 static struct tool_t tools[] = {
-  TOOL_DECL("Mill", 1),
-  TOOL_DECL("Lathe", 2),
-  TOOL_DECL("Drill Press", 3),
   TOOL_DECL("Drill Press", 4),
-  TOOL_DECL("CNC", 5),
   TOOL_DECL("Bandsaw", 6),
-  TOOL_DECL("Circular Saw", 7),
-  TOOL_DECL("Wood Band Saw", 8),
-  TOOL_DECL("Chop/Miter Saw", 9),
-  TOOL_DECL("Belt Sander", 10)
+  TOOL_DECL("Circular/Milter Saw", 2),
+  TOOL_DECL("Belt Sander", 5),
+  TOOL_DECL("Table Saw", 10),
+  TOOL_DECL("Mill", 8),
 };
 
 #define N_TOOLS (sizeof(tools)/sizeof(struct tool_t))
@@ -139,17 +135,7 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  if (strcmp(argv[optind], "refresh") == 0) {
-
-    send_signal(SIGUSR1);
-    return 0;
-
-  } else if (strcmp(argv[optind], "clear") == 0) {
-
-    send_signal(SIGUSR2);
-    return 0;
-
-  } else if (strcmp(argv[optind], "stop") == 0) {
+  if (strcmp(argv[optind], "stop") == 0) {
 
     send_signal(SIGTERM);
     return 0;
