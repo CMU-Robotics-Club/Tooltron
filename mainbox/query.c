@@ -86,7 +86,7 @@ int query_user_permission(int tool_id, unsigned int user_id) {
   if (handle == NULL)
     return 0;
 
-  sprintf(url, "https://%s/crm/roboauth/%08x/%08x/", server, user_id, tool_id);
+  sprintf(url, "https://%s/crm/roboauth/%08x/%d/", server, user_id, tool_id);
   error_code = curl_easy_setopt(handle, CURLOPT_URL, url);
   if (error_code) goto error;
 
