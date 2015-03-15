@@ -3,6 +3,7 @@
 #include "event.h"
 #include "log.h"
 #include "tooltron_mb.h"
+#include "cache.h"
 #include <modbus.h>
 #include <stdio.h>
 #include <errno.h>
@@ -154,10 +155,28 @@ void tool_poll(struct tool_t *tool) {
     case TS_OFF:
       if (status[MB_COIL_NEW]) {
         tool_read_user(tool);
-        if (query_user_permission(tool->address, tool->user)) {
-          tool_grant_access(tool);
+
+        int permission = query_user_permission(tool->address, tool->user);
+
+        // If network error check the cache
+        if (permission == -1) {
+          unsigned int v;
+          if(cache_lookup(tool->user, tool->address, &v)) {
+            if(v)
+              tool_grant_access(tool);
+            else
+              tool_deny_access(tool);
+          } else {
+            tool_deny_access(tool);
+          }
         } else {
-          tool_deny_access(tool);
+          if(permission) {
+            tool_grant_access(tool);
+          } else {
+            tool_deny_access(tool);
+          }
+
+          cache_update(tool->user, tool->address, permission);
         }
       }
       break;

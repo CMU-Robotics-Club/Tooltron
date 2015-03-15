@@ -116,7 +116,7 @@ error:
   log_print("ERROR: curl: %s", curl_easy_strerror(error_code));
   log_print("ERROR:       when authenticating user %08x", user_id);
   curl_easy_cleanup(handle);
-  return 0;
+  return -1;
 }
 
 /*
