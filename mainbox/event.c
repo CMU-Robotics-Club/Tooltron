@@ -23,7 +23,8 @@ void event_q_push(struct event_t *event) {
 
 void event_q_process() {
   struct event_t *old;
-  if (head && query_add_event(head) == 0) {
+  if (head) {
+    query_add_event(head);
     old = head;
     if (head == tail) {
       head = NULL;
