@@ -8,17 +8,6 @@
 #include <stdio.h>
 #include <sys/time.h>
 
-static struct tool_t tools[] = {
-  TOOL_DECL("Drill Press", 4),
-  TOOL_DECL("Bandsaw", 6),
-  TOOL_DECL("Circular/Milter Saw", 2),
-  TOOL_DECL("Belt Sander", 5),
-  TOOL_DECL("Table Saw", 10),
-  TOOL_DECL("Mill", 8),
-};
-
-#define N_TOOLS (sizeof(tools)/sizeof(struct tool_t))
-
 volatile int run = 1;
 
 void sigint(int sig) {
@@ -35,12 +24,25 @@ void send_signal(int sig) {
 }
 
 int tooltron_main(const char *device, const char *server) {
+  struct tool_t** tools;
+
+  if (query_init(server)) {
+    return 1;
+  }
+
+  int N_TOOLS;
+
+  if((N_TOOLS = query_tools(&tools)) < 0) {
+    log_print("query_tools failed");
+    return 1;
+  }
+
   struct sigaction sigact;
   struct timeval time_prev, time_cur;
   int i, diff;
 
   log_print("Serial device: %s", device);
-  log_print("CRM server: http://%s/", server);
+  log_print("CRM server: %s/", server);
 
   bzero(&sigact, sizeof(sigact));
   sigact.sa_flags = SA_RESTART;
@@ -64,7 +66,7 @@ int tooltron_main(const char *device, const char *server) {
 
   i = 0;
   while (run) {
-    tool_poll(&tools[i]);
+    tool_poll(tools[i]);
     event_q_process();
 
     // slow loop period down to MB_TIMEOUT_MS
@@ -83,7 +85,7 @@ int tooltron_main(const char *device, const char *server) {
 
   log_print("Disabling tools");
   for (i = 0; i < N_TOOLS; i++) {
-    tool_request_disable(&tools[i]);
+    tool_request_disable(tools[i]);
   }
 
   log_print("Closing modbus connection");
@@ -100,7 +102,7 @@ char *usage =
 "       -d specifies the serial port for Modbus\n"
 "          defaults to /dev/ttyUSB0\n"
 "       -s specifies the server where the CRM is running\n"
-"          defaults to roboticsclub.org\n"
+"          defaults to https://roboticsclub.org\n"
 "       <cmd> can be any of the following:\n"
 "          run     runs tooltron if it is not already running\n"
 "          stop    signals a running tooltron to shut down\n";
@@ -108,7 +110,7 @@ char *usage =
 int main(int argc, char **argv) {
   int opt, status, as_root;
   const char *device = "/dev/ttyUSB0";
-  const char *server = "roboticsclub.org";
+  const char *server = "https://roboticsclub.org";
 
   while ((opt = getopt(argc, argv, "hd:s:")) != -1) {
     switch (opt) {

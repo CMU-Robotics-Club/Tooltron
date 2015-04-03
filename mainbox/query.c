@@ -6,17 +6,20 @@
 #include <stdio.h>
 #include <string.h>
 #include <curl/curl.h>
+#include <json.h>
+
 
 /* Outputs the response to /add_card_event to debug.html */
 //#define DEBUG_EVENT_RESPONSE
 
-/* Size of buffer written to by write_buffer(). We are only reading integers
- * back from the server, so we don't need much of the response and anything
- * else can be ignored */
-#define WRITE_BUFFER_SIZE 30
+/* Size of buffer written to by write_buffer(). We are reading json
+ * for /api/machines/ so this needs to be rather large.
+ */
+// TODO: malloc this based upon the number of machine entries
+#define WRITE_BUFFER_SIZE 5000
+
 
 static const char *server;
-static char *tooltron_password;
 static char buffer[WRITE_BUFFER_SIZE+1]; // +1 for null byte
 static int buffer_idx;
 
@@ -31,17 +34,13 @@ int query_init(const char *server_name) {
     return error_code;
   }
 
-  tooltron_password = read_file("tooltron_password");
-  if (tooltron_password == NULL)
-    return 1;
-
   return 0;
 }
 
 void query_cleanup() {
+  //TODO: query_tools_cleanup or free 'tools' from query_tools here
+
   curl_global_cleanup();
-  if (tooltron_password)
-    free(tooltron_password);
 }
 
 static size_t write_buffer(void *buf_in, size_t size, size_t nmemb, void *userp) {
@@ -66,6 +65,104 @@ static size_t write_ignore(void *buffer, size_t size, size_t nmemb,
   return nmemb;
 }
 
+int query_tools(struct tool_t*** tools) {
+  log_print("Requesting machines from server");
+  
+  CURL* handle;
+  CURLcode error_code;
+  char url[1024];
+  long response = 0;
+
+  handle = curl_easy_init();
+  if (handle == NULL)
+    return 0;
+
+  // only retrieve machines that have Tooltron boxes on them
+  sprintf(url, "%s/api/machines/?toolbox_id__isnull=False", server);
+
+  error_code = curl_easy_setopt(handle, CURLOPT_URL, url);
+  if (error_code) goto error;
+
+  buffer_idx = 0;
+  error_code = curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_buffer);
+  if (error_code) goto error;
+
+  error_code = curl_easy_setopt(handle, CURLOPT_WRITEDATA, NULL);
+  if (error_code) goto error;
+
+  error_code = curl_easy_perform(handle);
+  if (error_code) goto error;
+
+  error_code = curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &response);
+  if (error_code) goto error;
+  if (response >= 400)
+    log_print("ERROR: response %ld from %s", response, url);
+  else if (response > 200)
+    log_print("WARNING: response %ld from %s", response, url);
+
+  struct json_object *json_tools = json_tokener_parse((char*)buffer);
+
+  int num_tools = json_object_array_length(json_tools);
+
+  log_print("Read %d tools from server", num_tools);
+
+  (*tools) = (struct tool_t**)malloc(num_tools * sizeof(struct tool_t*));
+
+  if(!tools) {
+    log_print("Out of memory mallocing tool array");
+    return -1;
+  }
+
+  int i;
+  for(i = 0; i < num_tools; i++) {
+    json_object* json_tool = json_object_array_get_idx(json_tools, i);
+
+    json_object* json_tool_toolbox_id = json_object_object_get(json_tool, "toolbox_id");
+    json_object* json_tool_name = json_object_object_get(json_tool, "type");
+
+    const char* tool_name = json_object_get_string(json_tool_name);
+    int tool_toolbox_id = json_object_get_int(json_tool_toolbox_id);
+
+    log_print("Tool Name: %s, Toolbox ID: %d", tool_name, tool_toolbox_id);
+
+    struct tool_t* tool = malloc(sizeof(struct tool_t));
+
+    if(!tool) {
+      log_print("Out of memory mallocing tool");
+      return -1;
+    }
+
+
+    tool->name = malloc(strlen(tool_name) + 1);
+
+    if(!tool->name) {
+      log_print("Out of memory mallocing tool name");
+      return -1;
+    }
+
+
+    strcpy(tool->name, tool_name);
+  
+    tool->address = tool_toolbox_id;
+    tool->connected = 1;
+    tool->state = TS_INIT;
+    tool->user = 0;
+    tool->event = NULL;
+
+    (*tools)[i] = tool;
+  }
+
+  curl_easy_cleanup(handle);
+  return num_tools;
+
+error:
+  log_print("ERROR: curl: %s", curl_easy_strerror(error_code));
+  log_print("ERROR:       when requesting machines from server");
+  curl_easy_cleanup(handle);
+  return -1;
+
+}
+
 /*
  * query_user_permission
  *
@@ -86,7 +183,7 @@ int query_user_permission(int tool_id, unsigned int user_id) {
   if (handle == NULL)
     return 0;
 
-  sprintf(url, "https://%s/crm/roboauth/%08x/%d/", server, user_id, tool_id);
+  sprintf(url, "%s/crm/roboauth/%08x/%d/", server, user_id, tool_id);
   error_code = curl_easy_setopt(handle, CURLOPT_URL, url);
   if (error_code) goto error;
 
@@ -147,16 +244,6 @@ int query_add_event(struct event_t *event) {
   if (handle == NULL)
     return 1;
 
-  curl_formadd(&formpost, &lastptr,
-      CURLFORM_COPYNAME, "username",
-      CURLFORM_COPYCONTENTS, "tooltron",
-      CURLFORM_END);
-
-  curl_formadd(&formpost, &lastptr,
-      CURLFORM_COPYNAME, "password",
-      CURLFORM_COPYCONTENTS, tooltron_password,
-      CURLFORM_END);
-
   timeinfo = localtime(&event->tstart);
   strftime(buf, sizeof(buf), "%F %T", timeinfo);
   curl_formadd(&formpost, &lastptr,
@@ -188,8 +275,7 @@ int query_add_event(struct event_t *event) {
       CURLFORM_COPYCONTENTS, event->succ? "1" : "0",
       CURLFORM_END);
 
-  sprintf(buf, "https://%s/crm/add_card_event/", server);
-  //sprintf(buf, "http://%s/crm/add_card_event/", server);
+  sprintf(buf, "%s/crm/add_card_event/", server);
   error_code = curl_easy_setopt(handle, CURLOPT_URL, buf);
   if (error_code) goto error;
 

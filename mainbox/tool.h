@@ -9,15 +9,13 @@ enum toolstate_t {
 };
 
 struct tool_t {
-  const char *name;
+  char *name;
   int address;
   int connected;
   enum toolstate_t state;
   unsigned int user;
   struct event_t *event;
 };
-
-#define TOOL_DECL(name, addr) {name, addr, 1, TS_INIT, 0, NULL}
 
 int tool_init_mb(const char *device);
 void tool_close_mb();
