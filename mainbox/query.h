@@ -17,4 +17,6 @@ int query_tools(struct tool_t*** tools);
 int query_user_permission(int tool_id, unsigned int user_id);
 int query_add_event(struct event_t *event);
 
+int query_tool_set_powered(const char* tool_id, bool powered);
+
 #endif

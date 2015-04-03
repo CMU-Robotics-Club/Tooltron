@@ -29,7 +29,7 @@ int tooltron_main(const char *device, const char *server) {
   if (query_init(server)) {
     return 1;
   }
-
+ 
   int N_TOOLS;
 
   if((N_TOOLS = query_tools(&tools)) < 0) {

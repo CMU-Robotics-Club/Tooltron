@@ -1,6 +1,8 @@
 #ifndef TOOL_H
 #define TOOL_H
 
+#include <stdbool.h>
+
 enum toolstate_t {
   TS_INIT,
   TS_OFF,
@@ -9,12 +11,14 @@ enum toolstate_t {
 };
 
 struct tool_t {
-  char *name;
-  int address;
+  char* id;
+  char *name; //'type' on the server
+  int address; //'toolbox_id' on the server
   int connected;
   enum toolstate_t state;
   unsigned int user;
   struct event_t *event;
+  bool powered;
 };
 
 int tool_init_mb(const char *device);

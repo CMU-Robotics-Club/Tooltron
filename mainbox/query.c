@@ -23,6 +23,9 @@ static const char *server;
 static char buffer[WRITE_BUFFER_SIZE+1]; // +1 for null byte
 static int buffer_idx;
 
+static char* public_key;
+static char* private_key;
+
 int query_init(const char *server_name) {
   CURLcode error_code;
 
@@ -34,11 +37,29 @@ int query_init(const char *server_name) {
     return error_code;
   }
 
+  public_key = read_file("tooltron_public_key");
+  if(!public_key) {
+    log_print("No file tooltron_public_key");
+    return -1;
+  }
+
+  private_key = read_file("tooltron_private_key");
+  if(!public_key) {
+    log_print("No file tooltron_private_key");
+    return -1;
+  }
+
   return 0;
 }
 
 void query_cleanup() {
   //TODO: query_tools_cleanup or free 'tools' from query_tools here
+
+  if(public_key)
+    free(public_key);
+
+  if(private_key)
+    free(private_key);
 
   curl_global_cleanup();
 }
@@ -117,13 +138,15 @@ int query_tools(struct tool_t*** tools) {
   for(i = 0; i < num_tools; i++) {
     json_object* json_tool = json_object_array_get_idx(json_tools, i);
 
+    json_object* json_tool_id = json_object_object_get(json_tool, "id");
     json_object* json_tool_toolbox_id = json_object_object_get(json_tool, "toolbox_id");
     json_object* json_tool_name = json_object_object_get(json_tool, "type");
 
+    const char* tool_id = json_object_get_string(json_tool_id);
     const char* tool_name = json_object_get_string(json_tool_name);
     int tool_toolbox_id = json_object_get_int(json_tool_toolbox_id);
 
-    log_print("Tool Name: %s, Toolbox ID: %d", tool_name, tool_toolbox_id);
+    log_print("Tool ID: %s, Tool Name: %s, Toolbox ID: %d", tool_id, tool_name, tool_toolbox_id);
 
     struct tool_t* tool = malloc(sizeof(struct tool_t));
 
@@ -131,6 +154,15 @@ int query_tools(struct tool_t*** tools) {
       log_print("Out of memory mallocing tool");
       return -1;
     }
+
+    tool->id = malloc(strlen(tool_id) + 1);
+
+    if(!tool->id) {
+      log_print("Out of memory mallocing tool id");
+      return -1;
+    }
+
+    strcpy(tool->id, tool_id);
 
 
     tool->name = malloc(strlen(tool_name) + 1);
@@ -140,14 +172,15 @@ int query_tools(struct tool_t*** tools) {
       return -1;
     }
 
-
     strcpy(tool->name, tool_name);
+
   
     tool->address = tool_toolbox_id;
     tool->connected = 1;
     tool->state = TS_INIT;
     tool->user = 0;
     tool->event = NULL;
+    tool->powered = false;
 
     (*tools)[i] = tool;
   }
@@ -324,3 +357,105 @@ error:
 #endif
   return 1;
 }
+
+int query_tool_set_powered(const char* tool_id, bool powered) {
+  CURL* handle;
+  CURLcode error_code;
+  char buf[1024];
+  long response = 0;
+  struct curl_slist *headers = NULL;
+
+#ifdef DEBUG_EVENT_RESPONSE
+  FILE *fdebug;
+  fdebug = fopen("debug.html", "w");
+#endif
+
+  handle = curl_easy_init();
+  if (handle == NULL)
+    return 1;
+
+  headers = curl_slist_append(headers, "Accept: application/json");
+  headers = curl_slist_append(headers, "Content-Type: application/json");
+
+  sprintf(buf, "PUBLIC_KEY: %s", public_key);
+  headers = curl_slist_append(headers, buf);
+
+  sprintf(buf, "PRIVATE_KEY: %s", private_key);
+  headers = curl_slist_append(headers, buf);
+
+  // For new ModWSGI version.  Delete previous
+  // authentication headers when Roboclub8 fully migrated
+  sprintf(buf, "PUBLIC-KEY: %s", public_key);
+  headers = curl_slist_append(headers, buf);
+
+  sprintf(buf, "PRIVATE-KEY: %s", private_key);
+  headers = curl_slist_append(headers, buf);
+
+  json_object* json = json_object_new_object();
+  json_object_object_add(json, "powered", json_object_new_boolean(powered));
+
+  sprintf(buf, "%s/api/machines/%s/", server, tool_id);
+  error_code = curl_easy_setopt(handle, CURLOPT_URL, buf);
+  if (error_code) goto error;
+
+  /* TODO disabling host and peer verification should theoretically be removed
+   * eventually */
+  error_code = curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, 0L);
+  if (error_code) goto error;
+
+  error_code = curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
+  if (error_code) goto error;
+
+#ifdef DEBUG_EVENT_RESPONSE
+  error_code = curl_easy_setopt(handle, CURLOPT_WRITEDATA, fdebug);
+#else
+  error_code = curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_ignore);
+#endif
+  if (error_code) goto error;
+
+  error_code = curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, "PUT");
+  if (error_code) goto error;
+
+  error_code = curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
+  if (error_code) goto error;
+
+  error_code = curl_easy_setopt(handle, CURLOPT_POSTFIELDS, json_object_to_json_string(json));
+  if (error_code) goto error;
+
+
+  error_code = curl_easy_perform(handle);
+  if (error_code) goto error;
+
+  error_code = curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &response);
+  if (error_code) goto error;
+  if (response >= 400)
+    log_print("ERROR: response %ld from %s", response, buf);
+  else if (response > 200)
+    log_print("WARNING: response %ld from %s", response, buf);
+
+  curl_easy_cleanup(handle);
+  curl_slist_free_all(headers);
+#ifdef DEBUG_EVENT_RESPONSE
+  fclose(fdebug);
+#endif
+
+  // Free json object
+  json_object_put(json);
+
+  // return error if it's not a 200-level response
+  return response >= 300;
+
+error:
+  log_print("ERROR: curl: %s", curl_easy_strerror(error_code));
+  curl_easy_cleanup(handle);
+  curl_slist_free_all(headers);
+#ifdef DEBUG_EVENT_RESPONSE
+  fclose(fdebug);
+#endif
+
+  // Free json object
+  json_object_put(json);
+
+  return 1;
+}
+

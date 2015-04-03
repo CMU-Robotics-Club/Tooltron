@@ -132,12 +132,26 @@ void tool_poll(struct tool_t *tool) {
     tool->connected = 1;
   }
 
-  /*uint16_t current;
+  uint16_t current;
   if (modbus_read_input_registers(ctx, MB_INP_CURRENT, 1, &current) == -1) {
     log_print("ERROR: modbus_read_registers: %s", modbus_strerror(errno));
   } else {
     printf("Current: %d\n", current);
-  }*/
+
+    if(current >= 5) {
+      if(!tool->powered) {
+        tool->powered = true;
+        log_print("%s turned ON via current sensing", tool->name);
+        query_tool_set_powered(tool->id, true);
+      }
+    } else {
+      if(tool->powered) {
+        tool->powered = false;
+        log_print("%s turned OFF via current sensing", tool->name);
+        query_tool_set_powered(tool->id, false);
+      }
+    }
+  }
 
   /*printf("new:%d en:%d req_dis:%d init:%d\n", status[MB_COIL_NEW],
       status[MB_COIL_EN], status[MB_COIL_REQ_DIS], status[MB_COIL_INIT]);*/
